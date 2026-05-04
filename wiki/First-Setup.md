@@ -21,7 +21,7 @@ If these are unavailable, the device may be asleep, the selected serial port may
 
 ## Recommended Starting Settings
 
-- Leave `Remote Panel Standby` on if you want Home Assistant to keep control when the inverter/charger is off.
+- Leave `Remote Panel Standby` on if you want Home Assistant to keep control when the inverter or inverter/charger is off.
 - Leave charger voltage and current settings unchanged until you have checked the battery manual.
 - Leave advanced VE.Bus switches unchanged unless you know why they are needed.
 

@@ -27,6 +27,7 @@ from typing import Callable
 
 from . import Context, Data, UPDATE_INTERVAL
 from .battery_energy import BatteryEnergyAccumulator, BatteryEnergyDirection
+from .capabilities import entity_supported
 from .const import (
     AC_PHASES_POLLED,
     DOMAIN,
@@ -558,6 +559,7 @@ async def async_setup_entry(
     entities = [
         VictronMK3SensorEntity(context, description)
         for description in ENTITY_DESCRIPTIONS
+        if entity_supported(context.capabilities, description.key)
     ]
     entities += [
         VictronMK3BatteryEnergySensorEntity(context, description)
@@ -567,6 +569,7 @@ async def async_setup_entry(
         ac_sensors = [
             VictronMK3SensorEntity(context, description)
             for description in make_ac_phase_sensors(phase)
+            if entity_supported(context.capabilities, description.key)
         ]
         context.controller.ac_entities[phase - 1] += ac_sensors
         entities += ac_sensors

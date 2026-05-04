@@ -12,6 +12,8 @@
 | `inverter_only` | Inverter is enabled and charger is disabled. |
 | `pass_through` | Charging is disabled while the inverter side stays enabled so incoming AC can pass through when available. |
 
+On inverter-only VE.Bus units, `Remote Panel Mode` shows only `off` and `on`. Charger-only and pass-through requests are not available because there is no charger to control.
+
 ## Why Home Assistant Might Not Win
 
 The physical front switch, remote on/off input, external panels, and the device firmware can override Home Assistant. If `Remote Panel Mode` says one thing and `Actual Mode` says another, use `Actual Mode` as the truth.

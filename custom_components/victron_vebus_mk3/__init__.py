@@ -14,7 +14,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import device_registry
+from homeassistant.helpers import device_registry, entity_registry
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.update_coordinator import (
@@ -74,12 +74,19 @@ from .const import (
     DOMAIN,
     KEY_CONTEXT,
 )
+from .capabilities import (
+    DeviceCapabilities,
+    infer_device_capabilities,
+    unsupported_entity_keys,
+)
 from .remote_panel import (
     Mode,
     base_mode_for_remote_panel,
     disable_charge_for_remote_panel,
     enum_options,
+    mode_for_capabilities,
     mode_from_value,
+    mode_supported_by_capabilities,
     mode_with_disable_charge,
 )
 from .ram_variables import (
@@ -132,9 +139,11 @@ class Data:
         self.ac: List[ACResponse | None] = [None] * AC_PHASES_POLLED
         self.battery_monitor_enabled: bool | None = None
         self.battery_soc: float | None = None
+        self.capabilities = DeviceCapabilities()
         self.config: ConfigResponse | None = None
         self.dc: DCResponse | None = None
         self.device_charge_state: DeviceChargeState | None = None
+        self.device_charge_state_supported: bool | None = None
         self.interface: InterfaceResponse | None = None
         self.led: LEDResponse | None = None
         self.power: PowerResponse | None = None
@@ -151,7 +160,9 @@ class Data:
         if reg & SwitchRegister.FRONT_SWITCH_UP != 0:
             return Mode.ON
         if reg & SwitchRegister.FRONT_SWITCH_DOWN != 0:
-            return Mode.CHARGER_ONLY
+            return mode_for_capabilities(
+                Mode.CHARGER_ONLY, self.capabilities.has_charger
+            )
         return Mode.OFF
 
     def remote_panel_mode(self) -> Mode | None:
@@ -164,14 +175,15 @@ class Data:
         )
         if reg & SwitchRegister.DIRECT_REMOTE_SWITCH_CHARGE != 0:
             if reg & SwitchRegister.DIRECT_REMOTE_SWITCH_INVERT != 0:
-                return mode_with_disable_charge(Mode.ON, charge_disabled is True)
+                mode = mode_with_disable_charge(Mode.ON, charge_disabled is True)
             else:
-                return Mode.CHARGER_ONLY
+                mode = Mode.CHARGER_ONLY
         else:
             if reg & SwitchRegister.DIRECT_REMOTE_SWITCH_INVERT != 0:
-                return Mode.INVERTER_ONLY
+                mode = Mode.INVERTER_ONLY
             else:
-                return Mode.OFF
+                mode = Mode.OFF
+        return mode_for_capabilities(mode, self.capabilities.has_charger)
 
     def actual_mode(self) -> Mode | None:
         if self.config is None:
@@ -183,14 +195,15 @@ class Data:
         )
         if reg & SwitchRegister.SWITCH_CHARGE != 0:
             if reg & SwitchRegister.SWITCH_INVERT != 0:
-                return mode_with_disable_charge(Mode.ON, charge_disabled is True)
+                mode = mode_with_disable_charge(Mode.ON, charge_disabled is True)
             else:
-                return Mode.CHARGER_ONLY
+                mode = Mode.CHARGER_ONLY
         else:
             if reg & SwitchRegister.SWITCH_INVERT != 0:
-                return Mode.INVERTER_ONLY
+                mode = Mode.INVERTER_ONLY
             else:
-                return Mode.OFF
+                mode = Mode.OFF
+        return mode_for_capabilities(mode, self.capabilities.has_charger)
 
 
 class Controller(Handler):
@@ -202,6 +215,7 @@ class Controller(Handler):
         self._setting_info: dict[int, SettingInfo] = {}
         self._last_battery_capacity: float | None = None
         self._version: VersionResponse | None = None
+        self.capabilities = DeviceCapabilities()
         self.standby: bool | None = None
         self.ac_entities = [[] for _ in range(0, AC_PHASES_POLLED)]
 
@@ -266,6 +280,7 @@ class Controller(Handler):
         await self._update_ram_variables(data)
         try:
             data.device_charge_state = await read_device_charge_state(self._mk3)
+            data.device_charge_state_supported = data.device_charge_state is not None
         except Exception:
             logger.debug("Failed to read detailed charge state", exc_info=True)
         try:
@@ -274,11 +289,25 @@ class Controller(Handler):
         except Exception:
             logger.debug("Failed to read battery state of charge", exc_info=True)
         data.config = await self._mk3.send_config_request()
+        data.capabilities = infer_device_capabilities(data)
+        self.capabilities = data.capabilities
         return data
 
     async def set_remote_panel_state(
         self, mode: Mode, current_limit: float | None
     ) -> None:
+        if not mode_supported_by_capabilities(mode, self.capabilities.has_charger):
+            raise HomeAssistantError(
+                f"{mode.name.lower()} is not available on inverter-only devices"
+            )
+
+        if self.capabilities.has_charger is False:
+            switch_state = (
+                SwitchState.OFF if mode is Mode.OFF else SwitchState.INVERTER_ONLY
+            )
+            await self._mk3.send_state_request(switch_state, None)
+            return
+
         await self._set_setting_flag(
             FLAGS0_SETTING_ID,
             DISABLE_CHARGE_FLAG_BIT,
@@ -501,6 +530,32 @@ class Context:
         self.device_id = device_id
         self.device_info = device_info
 
+    @property
+    def capabilities(self) -> DeviceCapabilities:
+        data = self.coordinator.data
+        if data is not None:
+            return data.capabilities
+        return self.controller.capabilities
+
+
+async def _prune_unsupported_entity_registry_entries(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    context: Context,
+) -> None:
+    keys = unsupported_entity_keys(context.capabilities)
+    if not keys:
+        return
+
+    registry = entity_registry.async_get(hass)
+    for entity_entry in entity_registry.async_entries_for_config_entry(
+        registry, entry.entry_id
+    ):
+        unique_id = entity_entry.unique_id
+        key = unique_id.rsplit("-", 1)[-1] if unique_id is not None else None
+        if key in keys:
+            registry.async_remove(entity_entry.entity_id)
+
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a config entry."""
@@ -524,17 +579,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         identifiers={(DOMAIN, port)},
     )
 
+    context = Context(
+        controller, coordinator, device.id, DeviceInfo(identifiers={(DOMAIN, port)})
+    )
+
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = {
-        KEY_CONTEXT: Context(
-            controller, coordinator, device.id, DeviceInfo(identifiers={(DOMAIN, port)})
-        )
-    }
+    hass.data[DOMAIN][entry.entry_id] = {KEY_CONTEXT: context}
 
     await controller.start()
     entry.async_on_unload(controller.stop)
 
     await coordinator.async_refresh()
+    await _prune_unsupported_entity_registry_entries(hass, entry, context)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     await _async_setup_services(hass)

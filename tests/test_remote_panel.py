@@ -49,3 +49,38 @@ def test_mode_with_disable_charge_maps_on_to_pass_through() -> None:
         remote_panel.mode_with_disable_charge(remote_panel.Mode.CHARGER_ONLY, True)
         is remote_panel.Mode.CHARGER_ONLY
     )
+
+
+def test_inverter_only_mode_options_are_off_and_on() -> None:
+    assert remote_panel.mode_options_for_capabilities(False) == ["off", "on"]
+    assert "charger_only" in remote_panel.mode_options_for_capabilities(True)
+    assert "pass_through" in remote_panel.mode_options_for_capabilities(None)
+
+
+def test_inverter_only_mode_display_maps_enabled_modes_to_on() -> None:
+    assert (
+        remote_panel.mode_for_capabilities(remote_panel.Mode.INVERTER_ONLY, False)
+        is remote_panel.Mode.ON
+    )
+    assert (
+        remote_panel.mode_for_capabilities(remote_panel.Mode.PASS_THROUGH, False)
+        is remote_panel.Mode.ON
+    )
+    assert (
+        remote_panel.mode_for_capabilities(remote_panel.Mode.OFF, False)
+        is remote_panel.Mode.OFF
+    )
+
+
+def test_inverter_only_mode_validation_rejects_charger_modes() -> None:
+    assert remote_panel.mode_supported_by_capabilities(remote_panel.Mode.ON, False)
+    assert remote_panel.mode_supported_by_capabilities(remote_panel.Mode.OFF, False)
+    assert remote_panel.mode_supported_by_capabilities(
+        remote_panel.Mode.INVERTER_ONLY, False
+    )
+    assert not remote_panel.mode_supported_by_capabilities(
+        remote_panel.Mode.CHARGER_ONLY, False
+    )
+    assert not remote_panel.mode_supported_by_capabilities(
+        remote_panel.Mode.PASS_THROUGH, False
+    )

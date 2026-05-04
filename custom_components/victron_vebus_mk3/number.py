@@ -45,6 +45,7 @@ from .battery_monitor_settings import (
     relative_setting_absolute_value,
     relative_setting_offset_from_absolute,
 )
+from .capabilities import entity_supported
 from .const import (
     DOMAIN,
     KEY_CONTEXT,
@@ -104,6 +105,7 @@ async def set_dc_input_low_pre_alarm(context: Context, absolute_value: float) ->
 class VictronMK3NumberEntityDescription(NumberEntityDescription):
     range_fn: Callable[[Data], tuple[float, float, float, float] | None]
     set_fn: Callable[[Context, float], Awaitable[None]]
+    setting_id: int | None = None
 
 
 ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
@@ -137,6 +139,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, AC1_INPUT_CURRENT_LIMIT_SETTING_ID, value
         ),
+        setting_id=AC1_INPUT_CURRENT_LIMIT_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="ac2_input_current_limit",
@@ -150,6 +153,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, AC2_INPUT_CURRENT_LIMIT_SETTING_ID, value
         ),
+        setting_id=AC2_INPUT_CURRENT_LIMIT_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="absorption_voltage",
@@ -163,6 +167,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, ABSORPTION_VOLTAGE_SETTING_ID, value
         ),
+        setting_id=ABSORPTION_VOLTAGE_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="float_voltage",
@@ -176,6 +181,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, FLOAT_VOLTAGE_SETTING_ID, value
         ),
+        setting_id=FLOAT_VOLTAGE_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="charge_current",
@@ -189,6 +195,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, CHARGE_CURRENT_SETTING_ID, value
         ),
+        setting_id=CHARGE_CURRENT_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="inverter_output_voltage",
@@ -202,6 +209,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, INVERTER_OUTPUT_VOLTAGE_SETTING_ID, value
         ),
+        setting_id=INVERTER_OUTPUT_VOLTAGE_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="repeated_absorption_time",
@@ -214,6 +222,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, REPEATED_ABSORPTION_TIME_SETTING_ID, value
         ),
+        setting_id=REPEATED_ABSORPTION_TIME_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="repeated_absorption_interval",
@@ -228,6 +237,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, REPEATED_ABSORPTION_INTERVAL_SETTING_ID, value
         ),
+        setting_id=REPEATED_ABSORPTION_INTERVAL_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="maximum_absorption_time",
@@ -240,6 +250,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, MAXIMUM_ABSORPTION_TIME_SETTING_ID, value
         ),
+        setting_id=MAXIMUM_ABSORPTION_TIME_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="battery_capacity",
@@ -252,6 +263,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, BATTERY_CAPACITY_SETTING_ID, value
         ),
+        setting_id=BATTERY_CAPACITY_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="battery_soc_when_bulk_finished",
@@ -266,6 +278,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, BATTERY_SOC_WHEN_BULK_FINISHED_SETTING_ID, value
         ),
+        setting_id=BATTERY_SOC_WHEN_BULK_FINISHED_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="battery_charge_efficiency",
@@ -279,6 +292,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, BATTERY_CHARGE_EFFICIENCY_SETTING_ID, value
         ),
+        setting_id=BATTERY_CHARGE_EFFICIENCY_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="dc_input_low_shutdown",
@@ -292,6 +306,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, DC_INPUT_LOW_SHUTDOWN_SETTING_ID, value
         ),
+        setting_id=DC_INPUT_LOW_SHUTDOWN_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="dc_input_low_restart",
@@ -303,6 +318,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         mode=NumberMode.BOX,
         range_fn=lambda data: dc_input_low_restart_range(data),
         set_fn=set_dc_input_low_restart,
+        setting_id=DC_INPUT_LOW_RESTART_OFFSET_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="dc_input_low_pre_alarm",
@@ -314,6 +330,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         mode=NumberMode.BOX,
         range_fn=lambda data: dc_input_low_pre_alarm_range(data),
         set_fn=set_dc_input_low_pre_alarm,
+        setting_id=DC_INPUT_LOW_PRE_ALARM_OFFSET_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="assist_current_boost_factor",
@@ -325,6 +342,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, ASSIST_CURRENT_BOOST_FACTOR_SETTING_ID, value
         ),
+        setting_id=ASSIST_CURRENT_BOOST_FACTOR_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="aes_low_current_limit",
@@ -338,6 +356,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, AES_LOW_CURRENT_LIMIT_SETTING_ID, value
         ),
+        setting_id=AES_LOW_CURRENT_LIMIT_SETTING_ID,
     ),
     VictronMK3NumberEntityDescription(
         key="aes_current_hysteresis",
@@ -351,6 +370,7 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3NumberEntityDescription, ...] = (
         set_fn=lambda context, value: set_battery_monitor_setting(
             context, AES_CURRENT_HYSTERESIS_SETTING_ID, value
         ),
+        setting_id=AES_CURRENT_HYSTERESIS_SETTING_ID,
     ),
 )
 
@@ -440,4 +460,9 @@ async def async_setup_entry(
     async_add_entities(
         VictronMK3NumberEntity(context, description)
         for description in ENTITY_DESCRIPTIONS
+        if entity_supported(
+            context.capabilities,
+            description.key,
+            setting_id=description.setting_id,
+        )
     )

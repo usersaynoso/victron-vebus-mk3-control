@@ -14,6 +14,8 @@ Fields:
 - `mode`: `off`, `on`, `pass_through`, `charger_only`, or `inverter_only`.
 - `current_limit`: optional AC input current limit in amps.
 
+On inverter-only VE.Bus units, use only `off` or `on`. Charger-only and pass-through modes are rejected when the connected device reports that it has no charger.
+
 ## Example: Set Charger Only
 
 ```yaml

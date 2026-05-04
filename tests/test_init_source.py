@@ -27,3 +27,16 @@ def test_setup_entry_loads_new_entity_platforms() -> None:
     assert "Platform.BUTTON" in source
     assert "read_device_charge_state" in source
     assert "send_interface_request" in source
+
+
+def test_controller_rejects_charger_modes_for_inverter_only_devices() -> None:
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "custom_components"
+        / "victron_vebus_mk3"
+        / "__init__.py"
+    ).read_text()
+
+    assert "mode_supported_by_capabilities" in source
+    assert "not available on inverter-only devices" in source
+    assert "SwitchState.INVERTER_ONLY" in source

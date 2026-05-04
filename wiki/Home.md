@@ -2,7 +2,7 @@
 
 Welcome to the user guide for **Victron VE.Bus MK3 Control**.
 
-This integration connects Home Assistant to supported Victron VE.Bus inverter/chargers through the MK3-USB interface. It provides local monitoring, careful control, and enough information to build useful dashboards without a GX device or cloud account.
+This integration connects Home Assistant to supported Victron VE.Bus inverter/chargers and inverter-only units through the MK3-USB interface. It provides local monitoring, careful control, and enough information to build useful dashboards without a GX device or cloud account.
 
 ## Start Here
 
@@ -19,7 +19,7 @@ This integration connects Home Assistant to supported Victron VE.Bus inverter/ch
 - Reading battery voltage, power, state of charge, and energy totals.
 - Controlling remote panel mode and current limit.
 - Exposing supported VE.Bus configuration settings in Home Assistant.
-- Building automations that respect your inverter/charger limits.
+- Building automations that respect your inverter or inverter/charger limits.
 
 ## What This Integration Is Not
 

@@ -2,7 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Default-orange.svg)](https://github.com/hacs/integration)
 
-Local Home Assistant monitoring and control for Victron VE.Bus charger/inverter devices through the Victron MK3-USB interface.
+Local Home Assistant monitoring and control for Victron VE.Bus inverter/chargers and inverter-only devices through the Victron MK3-USB interface.
 
 Use this integration when you want Home Assistant to read useful VE.Bus data, set remote panel mode, adjust supported current limits, and expose safe configuration controls without a GX device or cloud account.
 
@@ -10,10 +10,11 @@ Full setup, safety notes, troubleshooting, and entity explanations are in the [p
 
 ## Highlights
 
+- Compatible with supported VE.Bus inverter/chargers such as MultiPlus/Quattro units and VE.Bus inverter-only units such as Phoenix/Inverter Compact models.
 - AC input/output, battery, power, energy, indicator, and diagnostic sensors.
-- Remote panel mode control: `on`, `off`, `charger_only`, `inverter_only`, and `pass_through`.
+- Remote panel mode control: `on`, `off`, `charger_only`, `inverter_only`, and `pass_through`; inverter-only units show only `off` and `on`.
 - Home Assistant Energy battery tracking with charge/discharge power and cumulative battery energy sensors.
-- Supported VE.Bus setting switches, numbers, selects, and buttons.
+- Supported VE.Bus setting switches, numbers, selects, and buttons. On inverter-only units, charger-specific entities are not applicable.
 - `victron_vebus_mk3.set_remote_panel_state` service for automations.
 
 ## Install
@@ -36,7 +37,7 @@ Manual installation is also supported by copying `custom_components/victron_vebu
 
 ## Safety
 
-This integration can change real inverter/charger behaviour. Check battery voltages, charge current, input limits, and advanced settings against your battery manual or installer settings before changing them. Hardware controls and external panels may override Home Assistant, so use `Actual Mode` as the source of truth when the requested mode and actual behaviour differ.
+This integration can change real inverter or inverter/charger behaviour. Check battery voltages, charge current, input limits, and advanced settings against your battery manual or installer settings before changing them. Hardware controls and external panels may override Home Assistant, so use `Actual Mode` as the source of truth when the requested mode and actual behaviour differ.
 
 ## Remote Panel Modes
 
@@ -48,9 +49,11 @@ This integration can change real inverter/charger behaviour. Check battery volta
 | `inverter_only` | Enable inverter and disable charger. |
 | `pass_through` | Disable charging while keeping pass-through available when incoming AC is present. |
 
+On inverter-only VE.Bus units, Home Assistant shows a simpler `off` and `on` remote panel control. Charger modes and charger-specific entities are hidden when the connected device explicitly reports that it does not support them.
+
 ## Entity Inventory
 
-The tables below list every entity key exposed by the integration. The detailed purpose, options, and safety guidance for each entity are in the [Entities Reference wiki page](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Entities-Reference).
+The tables below list possible entity keys exposed by the integration. The connected device's VE.Bus capabilities decide which entities are created; unsupported charger or AC-input entities are hidden. The detailed purpose, options, and safety guidance for each entity are in the [Entities Reference wiki page](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Entities-Reference).
 
 ### Sensors
 

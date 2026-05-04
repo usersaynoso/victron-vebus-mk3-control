@@ -13,6 +13,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from typing import Callable
 
 from . import Context, Data
+from .capabilities import entity_supported
 from .const import DOMAIN, KEY_CONTEXT
 from .protocol import InterfaceFlags, LEDState, SwitchRegister
 from .ram_variables import (
@@ -198,4 +199,5 @@ async def async_setup_entry(
     async_add_entities(
         VictronMK3BinarySensorEntity(context, description)
         for description in ENTITY_DESCRIPTIONS
+        if entity_supported(context.capabilities, description.key)
     )

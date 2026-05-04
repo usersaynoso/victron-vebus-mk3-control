@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from homeassistant.components.select import (
     SelectEntity,
     SelectEntityDescription,
@@ -18,7 +18,13 @@ from .const import (
     DOMAIN,
     KEY_CONTEXT,
 )
-from .remote_panel import Mode, enum_options, enum_value, mode_from_value
+from .remote_panel import (
+    Mode,
+    enum_options,
+    enum_value,
+    mode_from_value,
+    mode_options_for_capabilities,
+)
 
 
 async def select_remote_panel_mode(context: Context, option: str) -> None:
@@ -87,6 +93,12 @@ async def async_setup_entry(
 ) -> None:
     context = hass.data[DOMAIN][entry.entry_id][KEY_CONTEXT]
     async_add_entities(
-        VictronMK3SelectEntity(context, description)
+        VictronMK3SelectEntity(
+            context,
+            replace(
+                description,
+                options=mode_options_for_capabilities(context.capabilities.has_charger),
+            ),
+        )
         for description in ENTITY_DESCRIPTIONS
     )

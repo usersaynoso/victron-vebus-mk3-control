@@ -1,6 +1,6 @@
 # Entities Reference
 
-These entities are the MK3-readable and MK3-writable items exposed in Home Assistant. Read-only entities only show what the device reports. Configuration entities and buttons change device behavior, so use the guidance in the last column before changing them.
+These are the possible MK3-readable and MK3-writable entities exposed in Home Assistant. The connected VE.Bus device decides which ones are created: unsupported charger, AC-input, current-limit, or setting entities are hidden. Read-only entities only show what the device reports. Configuration entities and buttons change device behavior, so use the guidance in the last column before changing them.
 
 ## Sensors
 
@@ -123,7 +123,7 @@ These entities are the MK3-readable and MK3-writable items exposed in Home Assis
 
 | Entity key | Name | What it means and why you might care | States, options, and changing guidance |
 | --- | --- | --- | --- |
-| `remote_panel_mode` | Remote Panel Mode | Sets the same basic operating request as a remote control panel. The physical switch and other inputs can still override it. | Off disables charger and inverter. On enables both. Charger only charges batteries but does not invert. Inverter only powers loads from battery but does not charge. Pass through stops charging while allowing incoming AC to pass to loads when available. Change only when you want to control the unit operating mode. |
+| `remote_panel_mode` | Remote Panel Mode | Sets the same basic operating request as a remote control panel. The physical switch and other inputs can still override it. | Off disables the unit. On enables the available inverter or inverter/charger function. Charger only, inverter only, and pass through are shown only when the connected device supports those charger-related controls. |
 
 ## Buttons
 

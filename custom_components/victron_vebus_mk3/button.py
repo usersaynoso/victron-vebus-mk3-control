@@ -10,6 +10,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from typing import Awaitable, Callable
 
 from . import Context
+from .capabilities import entity_supported
 from .const import DOMAIN, KEY_CONTEXT
 from .vebus_state import ChargeStateAction
 
@@ -84,4 +85,5 @@ async def async_setup_entry(
     async_add_entities(
         VictronMK3ButtonEntity(context, description)
         for description in ENTITY_DESCRIPTIONS
+        if entity_supported(context.capabilities, description.key)
     )

@@ -19,6 +19,7 @@ from . import Context
 from .battery_monitor_settings import (
     ACCEPT_WIDE_INPUT_FREQUENCY_FLAG_BIT,
     AES_LOW_POWER_SHUTDOWN_ENABLED_FLAG_BIT,
+    BATTERY_CAPACITY_SETTING_ID,
     DISABLE_WAVE_CHECK_FLAG_BIT,
     DISABLE_WAVE_CHECK_INVERTED_FLAG_BIT,
     DISABLE_AES_FLAG_BIT,
@@ -39,6 +40,7 @@ from .battery_monitor_settings import (
     ups_function_supported,
     WEAK_AC_INPUT_ENABLED_FLAG_BIT,
 )
+from .capabilities import entity_supported
 from .const import (
     DOMAIN,
     KEY_CONTEXT,
@@ -521,21 +523,47 @@ class VictronMK3SettingFlagSwitchEntity(CoordinatorEntity, SwitchEntity):
         await self.entity_description.set_fn(self.context, False)
 
 
+def _ups_function_entity_supported(context: Context) -> bool:
+    capabilities = context.capabilities
+    return (
+        entity_supported(capabilities, "ups_function")
+        and capabilities.supports_setting_flag(
+            FLAGS0_SETTING_ID, DISABLE_WAVE_CHECK_FLAG_BIT
+        )
+        and capabilities.supports_setting_flag(
+            FLAGS0_SETTING_ID, DISABLE_WAVE_CHECK_INVERTED_FLAG_BIT
+        )
+    )
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     context = hass.data[DOMAIN][entry.entry_id][KEY_CONTEXT]
-    async_add_entities(
-        [
-            VictronMK3StandbySwitchEntity(context),
-            VictronMK3BatteryMonitorSwitchEntity(context),
-            VictronMK3ChargeEnabledSwitchEntity(context),
-            VictronMK3UpsFunctionSwitchEntity(context),
-            *(
-                VictronMK3SettingFlagSwitchEntity(context, description)
-                for description in SETTING_FLAG_ENTITY_DESCRIPTIONS
-            ),
-        ]
+    entities = [VictronMK3StandbySwitchEntity(context)]
+    if entity_supported(
+        context.capabilities,
+        VictronMK3BatteryMonitorSwitchEntity.entity_description.key,
+        setting_id=BATTERY_CAPACITY_SETTING_ID,
+    ):
+        entities.append(VictronMK3BatteryMonitorSwitchEntity(context))
+    if entity_supported(
+        context.capabilities,
+        VictronMK3ChargeEnabledSwitchEntity.entity_description.key,
+        setting_flag=(FLAGS0_SETTING_ID, DISABLE_CHARGE_FLAG_BIT),
+    ):
+        entities.append(VictronMK3ChargeEnabledSwitchEntity(context))
+    if _ups_function_entity_supported(context):
+        entities.append(VictronMK3UpsFunctionSwitchEntity(context))
+    entities.extend(
+        VictronMK3SettingFlagSwitchEntity(context, description)
+        for description in SETTING_FLAG_ENTITY_DESCRIPTIONS
+        if entity_supported(
+            context.capabilities,
+            description.key,
+            setting_flag=(description.setting_id, description.flag_bit),
+        )
     )
+    async_add_entities(entities)

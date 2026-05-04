@@ -23,6 +23,26 @@ def mode_from_value(value: str) -> Mode:
     return Mode[value.upper()]
 
 
+def mode_options_for_capabilities(has_charger: bool | None) -> list[str]:
+    if has_charger is False:
+        return [enum_value(Mode.OFF), enum_value(Mode.ON)]
+    return enum_options(Mode)
+
+
+def mode_for_capabilities(mode: Mode | None, has_charger: bool | None) -> Mode | None:
+    if mode is None or has_charger is not False:
+        return mode
+    if mode is Mode.OFF:
+        return Mode.OFF
+    return Mode.ON
+
+
+def mode_supported_by_capabilities(mode: Mode, has_charger: bool | None) -> bool:
+    if has_charger is False:
+        return mode in (Mode.OFF, Mode.ON, Mode.INVERTER_ONLY)
+    return True
+
+
 def charger_enabled_in_mode(mode: Mode) -> bool:
     return mode in (Mode.ON, Mode.CHARGER_ONLY)
 
