@@ -117,7 +117,7 @@ def test_all_entities_have_translations_in_strings_and_english() -> None:
             assert expected_states <= set(states)
 
 
-def test_all_entities_have_readme_reference_rows() -> None:
+def test_all_entities_have_readme_inventory_rows() -> None:
     inventory = _source_inventory()
     readme = (ROOT / "README.md").read_text()
     missing = []
@@ -129,11 +129,29 @@ def test_all_entities_have_readme_reference_rows() -> None:
     assert missing == []
 
 
-def test_entity_reference_avoids_gx_only_or_protocol_jargon() -> None:
+def test_all_entities_have_detailed_wiki_reference_rows() -> None:
+    inventory = _source_inventory()
+    wiki_reference = (ROOT / "wiki" / "Entities-Reference.md").read_text()
+    missing = []
+
+    for key in sorted(key for keys in inventory.values() for key in keys):
+        if f"| `{key}` |" not in wiki_reference:
+            missing.append(key)
+
+    assert missing == []
+
+
+def test_readme_keeps_entity_inventory_concise() -> None:
     readme = (ROOT / "README.md").read_text()
-    entity_reference = readme.split("## Entity Reference", 1)[1].split(
-        "## Home Assistant Energy Setup", 1
+    entity_inventory = readme.split("## Entity Inventory", 1)[1].split(
+        "## Home Assistant Energy", 1
     )[0]
+
+    assert "What it means and why you might care" not in entity_inventory
+
+
+def test_entity_reference_avoids_gx_only_or_protocol_jargon() -> None:
+    entity_reference = (ROOT / "wiki" / "Entities-Reference.md").read_text()
 
     for blocked_phrase in (
         "RAM variable",

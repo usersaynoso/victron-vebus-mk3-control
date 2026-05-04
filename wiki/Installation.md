@@ -18,16 +18,6 @@
 3. Plug in the MK3-USB interface.
 4. Add **Victron VE.Bus MK3 Control** from Settings -> Devices & services.
 
-## Python Requirement
-
-The integration depends on:
-
-```text
-victron-vebus-mk3-protocol==1.0.0
-```
-
-Home Assistant installs this from the integration manifest. If the package is not published yet, install will fail. Publish the protocol package to PyPI before tagging the integration release.
-
 ## USB Notes
 
 - The MK3-USB adaptor appears as a serial port.

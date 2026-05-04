@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -25,6 +26,20 @@ def test_manifest_uses_v1_name_domain_and_protocol_package() -> None:
     assert "victron_vebus_mk3_protocol" in manifest["loggers"]
 
 
+def test_protocol_package_metadata_points_to_this_repository() -> None:
+    pyproject = tomllib.loads(
+        (ROOT / "victron_vebus_mk3_protocol_package" / "pyproject.toml").read_text()
+    )
+
+    assert pyproject["project"]["urls"] == {
+        "Homepage": (
+            "https://github.com/usersaynoso/victron-vebus-mk3-control/tree/main/"
+            "victron_vebus_mk3_protocol_package"
+        ),
+        "Issues": "https://github.com/usersaynoso/victron-vebus-mk3-control/issues",
+    }
+
+
 def test_hacs_metadata_uses_public_display_name() -> None:
     hacs = json.loads((ROOT / "hacs.json").read_text())
 
@@ -42,7 +57,7 @@ def test_service_selector_uses_new_domain() -> None:
     assert old_domain not in services
 
 
-def test_readme_uses_new_public_names_and_credit_footer() -> None:
+def test_readme_uses_public_names_and_service_domain() -> None:
     readme = (ROOT / "README.md").read_text()
     old_owner = "j9" + "brown/"
     old_service = "victron" + "_mk3.set_remote_panel_state"
@@ -50,12 +65,27 @@ def test_readme_uses_new_public_names_and_credit_footer() -> None:
     assert "# Victron VE.Bus MK3 Control" in readme
     assert "victron_vebus_mk3.set_remote_panel_state" in readme
     assert "usersaynoso/victron-vebus-mk3-control" in readme
-    assert (
-        "This project started as a fork of Jeff Brown's `victron-mk3-hass` "
-        "and has since been extended."
-    ) in readme
     assert old_owner not in readme
     assert old_service not in readme
+
+
+def test_public_docs_introduce_integration_without_migration_language() -> None:
+    public_docs = [ROOT / "README.md", *(ROOT / "wiki").glob("*.md")]
+    blocked_phrases = (
+        "renamed",
+        "new integration identity",
+        "old integration",
+        "old domain",
+        "Migration from",
+        "victron_mk3",
+        "victron-mk3-hass",
+        "started as a fork",
+    )
+
+    for path in public_docs:
+        content = path.read_text()
+        for phrase in blocked_phrases:
+            assert phrase not in content, f"{path}: {phrase}"
 
 
 def test_wiki_pages_exist_for_user_documentation() -> None:
@@ -70,7 +100,6 @@ def test_wiki_pages_exist_for_user_documentation() -> None:
         "Advanced-VE.Bus-Settings.md",
         "Services-and-Automations.md",
         "Troubleshooting.md",
-        "Migration-from-Victron-MK3.md",
         "Credits-and-License.md",
     }
 

@@ -20,7 +20,7 @@ The physical front switch, remote on/off input, external panels, and the device 
 
 Use current limits to protect shore power, campsite hookups, generators, and other incoming AC sources.
 
-Set the current limit no higher than the supply can safely provide. If the supply is 10 A, do not set 16 A just because the number box lets you. Home Assistant is helpful, not a licensed electrician in a tiny browser window.
+Set the current limit no higher than the supply can safely provide. If the supply is 10 A, do not set 16 A just because the number box allows it.
 
 ## Standby Mode
 

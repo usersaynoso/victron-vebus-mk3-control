@@ -19,5 +19,5 @@ dependencies = [
 cli = ["click"]
 
 [project.urls]
-Homepage = "https://github.com/usersaynoso/victron-vebus-mk3-protocol"
-Issues = "https://github.com/usersaynoso/victron-vebus-mk3-protocol/issues"
+Homepage = "https://github.com/usersaynoso/victron-vebus-mk3-control/tree/main/victron_vebus_mk3_protocol_package"
+Issues = "https://github.com/usersaynoso/victron-vebus-mk3-control/issues"

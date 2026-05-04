@@ -9,7 +9,7 @@ This package is intended to be used by the `Victron VE.Bus MK3 Control` Home Ass
 - Distribution name: `victron-vebus-mk3-protocol`
 - Import name: `victron_vebus_mk3_protocol`
 - Current version: `1.0.0`
-- Repository: `https://github.com/usersaynoso/victron-vebus-mk3-protocol`
+- Source: `https://github.com/usersaynoso/victron-vebus-mk3-control/tree/main/victron_vebus_mk3_protocol_package`
 
 ## What It Provides
 

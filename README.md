@@ -4,29 +4,19 @@
 
 Local Home Assistant monitoring and control for Victron VE.Bus charger/inverter devices through the Victron MK3-USB interface.
 
-This integration is for people who want useful Victron data and careful control in Home Assistant without needing a cloud account, a GX device, or a ritual involving three browser tabs and a USB cable. It talks locally to supported VE.Bus devices such as MultiPlus and Quattro units through the MK3-USB adaptor.
+Use this integration when you want Home Assistant to read useful VE.Bus data, set remote panel mode, adjust supported current limits, and expose safe configuration controls without a GX device or cloud account.
 
-## What It Does
+Full setup, safety notes, troubleshooting, and entity explanations are in the [project wiki](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki).
 
-- Shows AC input, AC output, battery, power, energy, indicator, and diagnostic data.
-- Lets Home Assistant request operating modes such as on, off, charger only, inverter only, and pass through.
-- Exposes safe Home Assistant entities for supported VE.Bus settings and flags.
-- Supports Home Assistant Energy battery tracking with charge/discharge power and cumulative battery energy sensors.
-- Provides the `victron_vebus_mk3.set_remote_panel_state` service for automations.
+## Highlights
 
-## Before You Change Settings
+- AC input/output, battery, power, energy, indicator, and diagnostic sensors.
+- Remote panel mode control: `on`, `off`, `charger_only`, `inverter_only`, and `pass_through`.
+- Home Assistant Energy battery tracking with charge/discharge power and cumulative battery energy sensors.
+- Supported VE.Bus setting switches, numbers, selects, and buttons.
+- `victron_vebus_mk3.set_remote_panel_state` service for automations.
 
-This integration can control real inverter/charger behaviour. It does not know your battery chemistry, cable size, generator rating, shore power limit, or whether someone has plugged in a heroic toaster.
-
-Use these rules:
-
-- Check battery voltages, charge current, and capacity against your battery manual or installer settings before changing them.
-- Change one setting at a time and confirm the device behaves as expected.
-- Keep VictronConnect or VEConfigure available as your recovery tool.
-- Leave advanced electrical settings alone unless you know why you are changing them.
-- If a physical switch, remote input, or external panel overrides Home Assistant, believe the hardware. Hardware has very little interest in winning UI arguments politely.
-
-## Quick Start
+## Install
 
 1. In HACS, add this repository as a custom integration repository:
    `https://github.com/usersaynoso/victron-vebus-mk3-control`
@@ -36,226 +26,173 @@ Use these rules:
 5. Go to Settings -> Devices & services and add **Victron VE.Bus MK3 Control**.
 6. If it is not auto-discovered, select the MK3-USB serial device from the setup form.
 
+Manual installation is also supported by copying `custom_components/victron_vebus_mk3` into Home Assistant's `custom_components` directory. See the [Installation wiki page](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Installation) for details.
+
+## Safety
+
+This integration can change real inverter/charger behaviour. Check battery voltages, charge current, input limits, and advanced settings against your battery manual or installer settings before changing them. Hardware controls and external panels may override Home Assistant, so use `Actual Mode` as the source of truth when the requested mode and actual behaviour differ.
+
 ## Remote Panel Modes
 
-The `Remote Panel Mode` entity and the `victron_vebus_mk3.set_remote_panel_state` service request these modes:
+| Mode | Request |
+| --- | --- |
+| `on` | Enable charger and inverter. |
+| `off` | Disable charger and inverter. |
+| `charger_only` | Enable charger and disable inverter. |
+| `inverter_only` | Enable inverter and disable charger. |
+| `pass_through` | Disable charging while keeping pass-through available when incoming AC is present. |
 
-- `on`: Enable the charger and enable the inverter.
-- `pass_through`: Disable charging while keeping the inverter side enabled so AC can pass through when available.
-- `charger_only`: Enable the charger and disable the inverter.
-- `inverter_only`: Enable the inverter and disable the charger.
-- `off`: Disable the charger and disable the inverter.
+## Entity Inventory
 
-The front panel switch and other inputs on the device may override the remote panel switch state.
-
-- When the device is turned off by the front panel switch or by the remote on/off connection, neither the charger nor the inverter will operate.
-- When the device is forced to charge only mode using the front panel switch, the inverter will not operate regardless of the remote panel switch state set by this interface.
-- Other conditions determined by the device may also apply such as constraints on the mains voltage and battery state of charge.
-
-The device retains the remote panel switch state and current limit set by the MK3 interface even after it has been disconnected from VE.Bus until the device goes to sleep (assuming it is not on standby). To restore the device to its default behavior, set the remote panel mode to `on` and set the current limit to its maximum.
-
-## Entity Reference
-
-These entities are the MK3-readable and MK3-writable items that are practical to expose safely in Home Assistant. Read-only entities only show what the device reports. Configuration entities and buttons change device behavior, so use the guidance in the last column before changing them.
+The tables below list every entity key exposed by the integration. The detailed purpose, options, and safety guidance for each entity are in the [Entities Reference wiki page](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Entities-Reference).
 
 ### Sensors
 
-| Entity key | Name | What it means and why you might care | States, options, and changing guidance |
-| --- | --- | --- | --- |
-| `ac_input_voltage` | AC Input Voltage | Shows the incoming mains, shore, or generator voltage on the main input. This helps you see whether outside power is present and healthy. | Read-only. |
-| `ac_input_current` | AC Input Current | Shows how much current the unit is taking from the main incoming power source. This helps you avoid overloading a shore hookup or generator. | Read-only. |
-| `ac_input_power` | AC Input Power | Shows the total power moving through the incoming power side. Positive usually means power is being used from the input; negative can mean power is flowing back toward the input. | Read-only. Use this for Home Assistant grid power only if the Victron unit measures the same grid point you want to track. |
-| `ac_input_frequency` | AC Input Frequency | Shows how steady the incoming AC power timing is. This is useful for checking generator or shore power quality. | Read-only. |
-| `ac_output_voltage` | AC Output Voltage | Shows the voltage being supplied to your loads from the unit output. This helps confirm that the unit is powering connected circuits correctly. | Read-only. |
-| `ac_output_current` | AC Output Current | Shows how much current your connected loads are using from the unit output. This helps you understand load size. | Read-only. |
-| `ac_output_power` | AC Output Power | Shows the power being delivered to the loads connected after the unit. This is a quick view of how much the protected circuits are using. | Read-only. |
-| `ac_output_frequency` | AC Output Frequency | Shows the AC timing on the unit output. This helps confirm that the output power looks normal. | Read-only. |
-| `ac_input_voltage_l2` | AC Input Voltage L2 | Shows incoming voltage on input line 2. A line is one separate live feed in a larger electrical system. | Read-only. Disabled by default because most users do not need extra lines. |
-| `ac_input_current_l2` | AC Input Current L2 | Shows how much current input line 2 is taking from mains, shore, or generator power. | Read-only. Disabled by default. |
-| `ac_output_voltage_l2` | AC Output Voltage L2 | Shows output voltage on line 2, for systems that report more than one output line. | Read-only. Disabled by default. |
-| `ac_output_current_l2` | AC Output Current L2 | Shows output current on line 2, for systems that report more than one output line. | Read-only. Disabled by default. |
-| `ac_input_voltage_l3` | AC Input Voltage L3 | Shows incoming voltage on input line 3. This is only useful on systems with more than two live lines. | Read-only. Disabled by default. |
-| `ac_input_current_l3` | AC Input Current L3 | Shows incoming current on input line 3. | Read-only. Disabled by default. |
-| `ac_output_voltage_l3` | AC Output Voltage L3 | Shows output voltage on line 3. | Read-only. Disabled by default. |
-| `ac_output_current_l3` | AC Output Current L3 | Shows output current on line 3. | Read-only. Disabled by default. |
-| `ac_input_voltage_l4` | AC Input Voltage L4 | Shows incoming voltage on input line 4 when a device reports it. This is rare and normally only useful for advanced installations. | Read-only. Disabled by default. |
-| `ac_input_current_l4` | AC Input Current L4 | Shows incoming current on input line 4 when a device reports it. | Read-only. Disabled by default. |
-| `ac_output_voltage_l4` | AC Output Voltage L4 | Shows output voltage on line 4 when a device reports it. | Read-only. Disabled by default. |
-| `ac_output_current_l4` | AC Output Current L4 | Shows output current on line 4 when a device reports it. | Read-only. Disabled by default. |
-| `ac_input_current_limit` | AC Input Current Limit | Shows the current limit currently being applied to incoming power. This matters because it controls how much the unit may draw from shore power or a generator. | Read-only. Change the writable current limit entities if you need to adjust it. |
-| `ac_input_current_limit_maximum` | AC Input Current Limit Maximum | Shows the highest incoming current limit the connected device reports. | Read-only. Use it as a guide for safe values. |
-| `ac_input_current_limit_minimum` | AC Input Current Limit Minimum | Shows the lowest incoming current limit the connected device reports. | Read-only. Use it as a guide for safe values. |
-| `last_active_ac_input` | Last Active AC Input | Shows which incoming power input was used most recently. This is useful on units that can switch between more than one shore, grid, or generator input. | Read-only. Options are AC input 1, AC input 2, AC input 3, AC input 4, or Unknown. |
-| `number_of_ac_inputs` | Number Of AC Inputs | Shows how many incoming power inputs the unit reports. This helps explain why some input controls may or may not appear. | Read-only. |
-| `reported_ac_number_of_phases` | Reported AC Number Of Phases | Shows how many live AC lines the unit reports for the first input. A phase is one live AC line in a larger electrical system, and this can help diagnose larger installations. | Read-only. Disabled by default because ordinary users rarely need it. |
-| `interface_flags` | Interface Flags | Shows a raw diagnostic number from the MK3 USB adaptor. It is mainly useful when troubleshooting with developers. | Read-only. Disabled by default. |
-| `battery_voltage` | Battery Voltage | Shows the battery voltage the unit sees. This helps you spot a low or unusually high battery. | Read-only. |
-| `battery_ripple_voltage` | Battery Ripple Voltage | Shows small repeated wobble in battery voltage. A high value can point to loose wiring, stressed batteries, or heavy pulsing loads. | Read-only. |
-| `battery_power` | Battery Power | Shows power at the battery using the device's own sign direction. Positive means charging and negative means discharging. | Read-only. |
-| `battery_charge_discharge_power` | Battery Charge Discharge Power | Shows the same battery power with the sign direction used by Home Assistant's battery energy view. Positive means discharging and negative means charging. | Read-only. Use this for Home Assistant Energy battery power. |
-| `battery_state_of_charge` | Battery State of Charge | Shows how full the battery is as a percentage. It is available when the device battery monitor is enabled and supported. | Read-only. |
-| `battery_charger_current` | Battery Charger Current | Shows current going from the charger into the battery. This helps you see charging strength. | Read-only. |
-| `battery_inverter_current` | Battery Inverter Current | Shows current going from the battery into the inverter side. This helps you see battery use while powering loads. | Read-only. |
-| `signed_ac_load_current` | Signed AC Load Current | Shows load current with a plus or minus sign so advanced users can see direction. Most users can leave it hidden. | Read-only. Disabled by default. |
-| `device_state` | Device State | Shows the broad operating state of the unit. It helps explain whether the unit is off, charging, inverting, passing power through, or starting up. | Read-only. Options include Down, Starting, Off, Linked unit, Inverting at full power, Inverting at reduced power, Inverter energy saving, Helping AC input with battery power, Passing AC through, and Charging. |
-| `vebus_charge_state` | Detailed Charge State | Shows the detailed charging stage reported by the unit. This helps explain what kind of battery charging is happening right now. | Read-only. Options include Not charging, Starting charge check, Fast charging, Finishing charge, Maintaining full battery, Long-term battery care, Scheduled top-up charge, Forced finishing charge, Battery balancing charge, Fast charging stopped, and Unknown. |
-| `firmware_version` | Firmware Version | Shows the firmware version reported by the unit. This is useful when comparing behavior or reporting issues. | Read-only. |
-| `lit_indicators` | Lit Indicators | Shows which front-panel indicator lights are on. It is kept for compatibility and gives a combined status view. | Read-only. Values may include Mains, Bulk, Absorption, Float, Inverter, Overload, Low battery, and Temperature. Use the individual indicator entities below for simple yes/no automations. |
-| `blinking_indicators` | Blinking Indicators | Shows which front-panel indicator lights are blinking. Blinking usually means the unit is showing a warning, progress, or special state. | Read-only. Values may include Mains, Bulk, Absorption, Float, Inverter, Overload, Low battery, and Temperature. Use the individual indicator entities below for simple yes/no automations. |
-| `front_panel_mode` | Front Panel Mode | Shows the position the physical front switch appears to request. This helps explain why Home Assistant commands may not take effect. | Read-only. Options are Off, On, and Charger only. |
-| `ignore_ac_input_state` | Ignore AC Input State | Shows whether the unit is currently ignoring incoming AC power. This can explain why it stays on battery even when mains, shore, or generator power is present. | Read-only. Off means the input can be used. On means the input is being ignored. |
-| `actual_mode` | Actual Mode | Shows what the unit is actually doing after the physical switch and other inputs are considered. This is often the best status entity for dashboards. | Read-only. Options are Off, On, Charger only, Inverter only, and Pass through. |
-| `battery_energy_into` | Battery Energy Into | Adds up energy charged into the battery over time. This is useful for Home Assistant Energy battery tracking. | Read-only total. Restored after restart. |
-| `battery_energy_out_of` | Battery Energy Out Of | Adds up energy taken out of the battery over time. This is useful for Home Assistant Energy battery tracking. | Read-only total. Restored after restart. |
+| Entity key | Name |
+| --- | --- |
+| `ac_input_voltage` | AC Input Voltage |
+| `ac_input_current` | AC Input Current |
+| `ac_input_power` | AC Input Power |
+| `ac_input_frequency` | AC Input Frequency |
+| `ac_output_voltage` | AC Output Voltage |
+| `ac_output_current` | AC Output Current |
+| `ac_output_power` | AC Output Power |
+| `ac_output_frequency` | AC Output Frequency |
+| `ac_input_voltage_l2` | AC Input Voltage L2 |
+| `ac_input_current_l2` | AC Input Current L2 |
+| `ac_output_voltage_l2` | AC Output Voltage L2 |
+| `ac_output_current_l2` | AC Output Current L2 |
+| `ac_input_voltage_l3` | AC Input Voltage L3 |
+| `ac_input_current_l3` | AC Input Current L3 |
+| `ac_output_voltage_l3` | AC Output Voltage L3 |
+| `ac_output_current_l3` | AC Output Current L3 |
+| `ac_input_voltage_l4` | AC Input Voltage L4 |
+| `ac_input_current_l4` | AC Input Current L4 |
+| `ac_output_voltage_l4` | AC Output Voltage L4 |
+| `ac_output_current_l4` | AC Output Current L4 |
+| `ac_input_current_limit` | AC Input Current Limit |
+| `ac_input_current_limit_maximum` | AC Input Current Limit Maximum |
+| `ac_input_current_limit_minimum` | AC Input Current Limit Minimum |
+| `last_active_ac_input` | Last Active AC Input |
+| `number_of_ac_inputs` | Number Of AC Inputs |
+| `reported_ac_number_of_phases` | Reported AC Number Of Phases |
+| `interface_flags` | Interface Flags |
+| `battery_voltage` | Battery Voltage |
+| `battery_ripple_voltage` | Battery Ripple Voltage |
+| `battery_power` | Battery Power |
+| `battery_charge_discharge_power` | Battery Charge Discharge Power |
+| `battery_state_of_charge` | Battery State of Charge |
+| `battery_charger_current` | Battery Charger Current |
+| `battery_inverter_current` | Battery Inverter Current |
+| `signed_ac_load_current` | Signed AC Load Current |
+| `device_state` | Device State |
+| `vebus_charge_state` | Detailed Charge State |
+| `firmware_version` | Firmware Version |
+| `lit_indicators` | Lit Indicators |
+| `blinking_indicators` | Blinking Indicators |
+| `front_panel_mode` | Front Panel Mode |
+| `ignore_ac_input_state` | Ignore AC Input State |
+| `actual_mode` | Actual Mode |
+| `battery_energy_into` | Battery Energy Into |
+| `battery_energy_out_of` | Battery Energy Out Of |
 
 ### Binary Sensors
 
-| Entity key | Name | What it means and why you might care | States, options, and changing guidance |
-| --- | --- | --- | --- |
-| `mains_indicator` | Mains Indicator | Shows whether the mains or shore power indicator light is active. This is easier to automate than the combined indicator sensor. | Read-only. On means the indicator is lit or blinking. Off means it is not active. |
-| `bulk_indicator` | Bulk Indicator | Shows whether the fast-charging indicator light is active. This helps you see when the battery is in the main charging stage. | Read-only. On means the indicator is lit or blinking. |
-| `absorption_indicator` | Absorption Indicator | Shows whether the finishing-charge indicator light is active. This means the battery is being held near full to finish charging. | Read-only. On means the indicator is lit or blinking. |
-| `float_indicator` | Float Indicator | Shows whether the battery-maintenance indicator light is active. This usually means the battery is full and being gently maintained. | Read-only. On means the indicator is lit or blinking. |
-| `inverter_indicator` | Inverter Indicator | Shows whether the inverter indicator light is active. This helps you see whether the unit is supplying power from the battery side. | Read-only. On means the indicator is lit or blinking. |
-| `overload_indicator` | Overload Indicator | Shows whether the overload warning light is active. This can mean connected loads are asking for too much power. | Read-only. On means the indicator is lit or blinking and should be checked. |
-| `low_battery_indicator` | Low Battery Indicator | Shows whether the low battery warning light is active. This can mean the battery is low or under heavy strain. | Read-only. On means the indicator is lit or blinking and should be checked. |
-| `temperature_indicator` | Temperature Indicator | Shows whether the temperature warning light is active. This can mean the unit is hot or has reduced output to protect itself. | Read-only. On means the indicator is lit or blinking and should be checked. |
-| `remote_panel_detected` | Remote Panel Detected | Shows whether the unit detects a remote control panel or equivalent control connection. This helps explain who is controlling the unit. | Read-only. On means a remote panel is detected. |
-| `current_limit_controlled_by_panel` | Current Limit Controlled By Panel | Shows whether an external panel is currently setting the incoming current limit. This matters because Home Assistant may not be the only controller. | Read-only. On means the external panel is controlling the limit. |
-| `external_control_panel_dedicated` | External Control Panel Dedicated | Shows whether the connected external control panel is treated as the dedicated controller for the unit. | Read-only. On means the external panel has a dedicated control role. |
-| `remote_generator_selected_state` | Remote Generator Selected State | Shows whether the remote input says the generator input is selected. This helps diagnose generator changeover wiring. | Read-only. On means the generator-selected input is active. |
-| `onboard_remote_inverter_switch` | Onboard Remote Inverter Switch | Shows whether the built-in remote inverter switch input is active. This can explain why the inverter is enabled or disabled outside Home Assistant. | Read-only. On means that input is active. |
-| `interface_panel_detect` | Interface Panel Detect | Shows whether the MK3 USB adaptor is presenting itself as a control panel. This is mainly useful for troubleshooting. | Read-only. Disabled by default. |
-| `interface_standby` | Interface Standby | Shows whether the MK3 USB adaptor is asking the unit to stay awake while off. This helps explain standby behavior. | Read-only. |
-| `virtual_switch_position` | Virtual Switch Position | Shows a yes/no switch position stored inside the unit. It can help diagnose remote control behavior. | Read-only. On means the reported virtual switch is active. |
-| `multi_functional_relay_state` | Multi-functional Relay State | Shows whether the unit's programmable relay is active. A relay is an internal switch that can control or signal other equipment. | Read-only. On means the relay is active. |
+| Entity key | Name |
+| --- | --- |
+| `mains_indicator` | Mains Indicator |
+| `bulk_indicator` | Bulk Indicator |
+| `absorption_indicator` | Absorption Indicator |
+| `float_indicator` | Float Indicator |
+| `inverter_indicator` | Inverter Indicator |
+| `overload_indicator` | Overload Indicator |
+| `low_battery_indicator` | Low Battery Indicator |
+| `temperature_indicator` | Temperature Indicator |
+| `remote_panel_detected` | Remote Panel Detected |
+| `current_limit_controlled_by_panel` | Current Limit Controlled By Panel |
+| `external_control_panel_dedicated` | External Control Panel Dedicated |
+| `remote_generator_selected_state` | Remote Generator Selected State |
+| `onboard_remote_inverter_switch` | Onboard Remote Inverter Switch |
+| `interface_panel_detect` | Interface Panel Detect |
+| `interface_standby` | Interface Standby |
+| `virtual_switch_position` | Virtual Switch Position |
+| `multi_functional_relay_state` | Multi-functional Relay State |
 
 ### Switches
 
-| Entity key | Name | What it means and why you might care | States, options, and changing guidance |
-| --- | --- | --- | --- |
-| `remote_panel_standby` | Remote Panel Standby | Keeps the unit awake enough for the MK3 USB adaptor to keep control when the unit is off. This prevents losing remote control while off. | On keeps the unit awake and uses a little more battery. Off allows deeper sleep. Safe to change, but leaving it on is usually best for reliable Home Assistant control. |
-| `battery_monitor` | Battery Monitor | Enables or disables the unit's own battery fullness tracking. This is needed for battery percentage reporting on supported devices. | On enables battery percentage tracking. Off disables it. Only turn it off if you do not want the unit estimating battery fullness. |
-| `charge_enabled` | Charge Enabled | Controls whether the unit may charge batteries from incoming AC power while preserving the inverter side setting. | On allows charging. Off stops AC battery charging. Turn this off only if you want the unit to stop charging batteries from incoming power. |
-| `ups_function` | UPS Function | Controls strict checking of incoming AC power for fast transfer behavior. It can reject poor generator power. | On keeps strict checking. Off relaxes checking. Leave on unless a generator or shore supply is being rejected and you understand the tradeoff. |
-| `power_assist` | PowerAssist | Allows the battery inverter to help when incoming shore or generator power is not enough for the load. | On can support heavy loads using battery power. Off stops that help. Change only if you understand your input limit and load size. |
-| `dynamic_current_limiter` | Dynamic Current Limiter | Lets the unit adjust how much current it draws from weaker generators. | On can be useful for unstable generators. Off uses the normal limit. Leave off unless your generator needs it. |
-| `weak_ac_input` | Weak AC Input | Allows the unit to accept less perfect incoming AC power. This can help with some generators but may accept power you would otherwise reject. | On is more tolerant. Off is stricter. Leave off unless a known generator or shore supply needs it. |
-| `aes` | AES | Controls AES, the automatic energy-saving inverter mode that lowers idle power use when loads are small. | On saves battery when loads are light. Off keeps the inverter fully ready. Safe for many systems, but turn off if small loads behave badly. |
-| `stop_after_excessive_bulk` | Stop After Excessive Bulk | Controls whether the charger stops if fast charging runs for too long. This protects against a battery that is not charging normally. | On stops after too much fast charging. Off keeps trying. Leave on unless an installer tells you otherwise. |
-| `storage_mode` | Storage Mode | Enables a long-term battery care mode that lowers the maintenance charge level after the battery has been full for a while. | On is useful for batteries left connected for long periods. Off keeps normal maintenance charging. Safe to change when you know your battery preference. |
-| `ground_relay` | Ground Relay | Controls an internal grounding relay used by some installations for electrical safety behavior. | On enables the relay. Off disables it. Leave this alone unless your installer tells you to change it. |
-| `accept_wide_frequency_range` | Accept Wide Frequency Range | Allows incoming AC power whose timing is farther from normal. This can help some generators. | On accepts a wider range. Off is stricter. Leave off unless your generator or shore power needs it. |
-| `remote_overrules_ac1` | Remote Overrules AC1 | Allows the remote current limit to override the saved limit for incoming power input 1. | On lets the remote limit win. Off uses the saved device setting. Change only if you intentionally control input 1 from Home Assistant or a panel. |
-| `remote_overrules_ac2` | Remote Overrules AC2 | Allows the remote current limit to override the saved limit for incoming power input 2. | On lets the remote limit win. Off uses the saved device setting. Change only if you intentionally control input 2 from Home Assistant or a panel. |
-| `tubular_plate_traction_battery_curve` | Tubular Plate Traction Battery Curve | Selects a charging behavior intended for a specific heavy-duty lead-acid battery type. | On uses that battery curve. Off uses the normal curve. Leave off unless your battery manual or installer says this is the correct battery type. |
-| `aes_low_power_shutdown` | AES Low Power Shutdown | Lets energy-saving inverter mode shut down more deeply when the load is very small. | On can save more battery. Off keeps the inverter more ready for tiny loads. Leave off if small devices need uninterrupted power. |
+| Entity key | Name |
+| --- | --- |
+| `remote_panel_standby` | Remote Panel Standby |
+| `battery_monitor` | Battery Monitor |
+| `charge_enabled` | Charge Enabled |
+| `ups_function` | UPS Function |
+| `power_assist` | PowerAssist |
+| `dynamic_current_limiter` | Dynamic Current Limiter |
+| `weak_ac_input` | Weak AC Input |
+| `aes` | AES |
+| `stop_after_excessive_bulk` | Stop After Excessive Bulk |
+| `storage_mode` | Storage Mode |
+| `ground_relay` | Ground Relay |
+| `accept_wide_frequency_range` | Accept Wide Frequency Range |
+| `remote_overrules_ac1` | Remote Overrules AC1 |
+| `remote_overrules_ac2` | Remote Overrules AC2 |
+| `tubular_plate_traction_battery_curve` | Tubular Plate Traction Battery Curve |
+| `aes_low_power_shutdown` | AES Low Power Shutdown |
 
 ### Numbers
 
-| Entity key | Name | What it means and why you might care | States, options, and changing guidance |
-| --- | --- | --- | --- |
-| `remote_panel_current_limit` | Remote Panel Current Limit | Sets the incoming current limit used by the remote panel control. This prevents overloading shore power or a generator. | Enter amps within the device range. Safe to change when matching a known shore hookup or generator rating. |
-| `ac1_input_current_limit` | AC1 Input Current Limit | Sets the saved current limit for incoming power input 1. | Enter amps within the supported range. Set this no higher than the supply can safely provide. |
-| `ac2_input_current_limit` | AC2 Input Current Limit | Sets the saved current limit for incoming power input 2 on devices that have one. | Enter amps within the supported range. Set this no higher than the supply can safely provide. |
-| `absorption_voltage` | Absorption Voltage | Sets the finishing-charge voltage. This affects how the battery is charged near full. | Change only to match the battery manufacturer's recommended value. Wrong values can shorten battery life. |
-| `float_voltage` | Float Voltage | Sets the gentle maintenance voltage used after charging is complete. | Change only to match the battery manufacturer's recommended value. |
-| `charge_current` | Charge Current | Sets the maximum battery charging current. This controls how hard the charger can charge the battery. | Change only within the battery's safe charging limit. |
-| `inverter_output_voltage` | Inverter Output Voltage | Sets the voltage the inverter tries to supply to connected loads. | Leave at the normal voltage for your country unless an installer tells you otherwise. |
-| `repeated_absorption_time` | Repeated Absorption Time | Sets how long a scheduled top-up finishing charge lasts. This helps keep batteries healthy during long-term use. | Change only if you understand your battery maintenance needs. |
-| `repeated_absorption_interval` | Repeated Absorption Interval | Sets how often the scheduled top-up finishing charge is repeated. | Change only if you understand your battery maintenance needs. |
-| `maximum_absorption_time` | Maximum Absorption Time | Sets the longest time the charger may spend in the finishing-charge stage. | Change only to match battery recommendations. |
-| `battery_capacity` | Battery Capacity | Sets the battery bank size so the unit can estimate battery fullness. | Enter amp-hours for the battery bank. Setting this to 0 disables the battery monitor. |
-| `battery_soc_when_bulk_finished` | State of Charge When Bulk Finished | Sets the percentage fullness the unit assumes when fast charging has finished. This affects the battery percentage estimate. | Change only if you are tuning battery percentage accuracy. |
-| `battery_charge_efficiency` | Charge Efficiency | Sets how much charged energy the unit expects the battery to keep. This affects the battery percentage estimate. | Values may be a fraction, such as 0.95 for 95%. Change only if you know your battery's expected efficiency. |
-| `dc_input_low_shutdown` | DC Input Low Shut-down | Sets the battery voltage where the inverter turns off to protect the battery. | Change only to match battery recommendations. Too low can damage batteries; too high can turn loads off early. |
-| `dc_input_low_restart` | DC Input Low Restart | Sets the battery voltage where the inverter may restart after a low-battery shutdown. | Change only to match battery recommendations. |
-| `dc_input_low_pre_alarm` | DC Input Low Pre-alarm | Sets the battery voltage where the unit warns before a low-battery shutdown. | Change only to match battery recommendations. |
-| `assist_current_boost_factor` | Assist Current Boost Factor | Sets how strongly the battery inverter helps incoming AC power during short heavy loads. | Installer-level setting. Leave alone unless you understand the input supply and load behavior. |
-| `aes_low_current_limit` | AES Low Current Limit | Sets the low-load point used by automatic energy-saving inverter mode. | Change only if tuning energy saving for small loads. |
-| `aes_current_hysteresis` | AES Current Hysteresis | Sets how much the load must change before automatic energy-saving mode switches state. This helps prevent rapid switching. | Change only if tuning energy saving for small loads. |
+| Entity key | Name |
+| --- | --- |
+| `remote_panel_current_limit` | Remote Panel Current Limit |
+| `ac1_input_current_limit` | AC1 Input Current Limit |
+| `ac2_input_current_limit` | AC2 Input Current Limit |
+| `absorption_voltage` | Absorption Voltage |
+| `float_voltage` | Float Voltage |
+| `charge_current` | Charge Current |
+| `inverter_output_voltage` | Inverter Output Voltage |
+| `repeated_absorption_time` | Repeated Absorption Time |
+| `repeated_absorption_interval` | Repeated Absorption Interval |
+| `maximum_absorption_time` | Maximum Absorption Time |
+| `battery_capacity` | Battery Capacity |
+| `battery_soc_when_bulk_finished` | State of Charge When Bulk Finished |
+| `battery_charge_efficiency` | Charge Efficiency |
+| `dc_input_low_shutdown` | DC Input Low Shut-down |
+| `dc_input_low_restart` | DC Input Low Restart |
+| `dc_input_low_pre_alarm` | DC Input Low Pre-alarm |
+| `assist_current_boost_factor` | Assist Current Boost Factor |
+| `aes_low_current_limit` | AES Low Current Limit |
+| `aes_current_hysteresis` | AES Current Hysteresis |
 
 ### Selects
 
-| Entity key | Name | What it means and why you might care | States, options, and changing guidance |
-| --- | --- | --- | --- |
-| `remote_panel_mode` | Remote Panel Mode | Sets the same basic operating request as a remote control panel. The physical switch and other inputs can still override it. | Off disables charger and inverter. On enables both. Charger only charges batteries but does not invert. Inverter only powers loads from battery but does not charge. Pass through stops charging while allowing incoming AC to pass to loads when available. Change only when you want to control the unit operating mode. |
+| Entity key | Name |
+| --- | --- |
+| `remote_panel_mode` | Remote Panel Mode |
 
 ### Buttons
 
-| Entity key | Name | What it means and why you might care | States, options, and changing guidance |
-| --- | --- | --- | --- |
-| `force_equalise` | Force Equalise | Starts a strong battery balancing charge on supported devices. This is only appropriate for batteries that allow it. | Momentary action. Press only when the battery manufacturer or installer says equalising is safe. |
-| `force_absorption` | Force Absorption | Forces the finishing-charge stage on supported devices. This can be useful after a battery has been partly charged. | Momentary action. Use only when you intentionally want a finishing charge now. |
-| `force_float` | Force Float | Forces the gentle maintenance charge stage on supported devices. This can stop stronger charging and hold the battery near full. | Momentary action. Use only when you intentionally want maintenance charging now. |
+| Entity key | Name |
+| --- | --- |
+| `force_equalise` | Force Equalise |
+| `force_absorption` | Force Absorption |
+| `force_float` | Force Float |
 
-## Home Assistant Energy Setup
+## Home Assistant Energy
 
-Open Settings -> Dashboards -> Energy to configure the energy dashboard.
+For battery storage, use:
 
-### Grid settings
+| Home Assistant setting | Entity |
+| --- | --- |
+| Energy charged | `Battery Energy Into` |
+| Energy discharged | `Battery Energy Out Of` |
+| Power measurement | `Battery Charge Discharge Power` |
+| Direction | `Standard` |
 
-This integration exposes `AC Input Power` as an instantaneous grid-side power sensor.
+`AC Input Power` can be used as an instantaneous grid-side power sensor only when the VE.Bus device measures the same grid connection point you want Home Assistant to display. See the [Energy Dashboard wiki page](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Energy-Dashboard).
 
-- Type of power measurement: `AC Input Power`
-- Direction: `Standard`
+## Service
 
-`AC Input Power` already follows Home Assistant's grid-power convention:
-
-- positive values mean importing from the grid
-- negative values mean exporting to the grid
-
-Only use `AC Input Power` for the grid power setting if the VE.Bus device is measuring the
-same grid connection point that you want Home Assistant to display. If part of the site load
-or generation bypasses the VE.Bus device, use a separate site meter for the grid settings.
-
-This integration does not currently expose cumulative grid import/export energy sensors, so
-the Energy dashboard's grid energy settings still need to come from an external meter or
-another integration when you want full grid energy accounting.
-
-### Home Battery Storage settings
-
-To configure Home Battery Storage in Home Assistant, use:
-
-- Energy charged: `Battery Energy Into`
-- Energy discharged: `Battery Energy Out Of`
-- Type of power measurement: `Battery Charge Discharge Power`
-- Direction: `Standard`
-
-`Battery Charge Discharge Power` follows Home Assistant's battery-power convention:
-
-- positive values mean the battery is discharging
-- negative values mean the battery is charging
-
-If you prefer to use `Battery Power` instead, select `Inverted` because `Battery Power`
-reports the opposite sign convention:
-
-- positive values mean charging
-- negative values mean discharging
-
-## Services
-
-The `victron_vebus_mk3.set_remote_panel_state` service action sets the remote panel mode and
-current limit simultaneously. The mode is required whereas the current limit is optional
-and defaults to its maximum value.
-
-The device id is a unique identifier assigned to the device by Home Assistant. To find this
-value, visit the Developer Tools -> Actions page in the Home Assistant UI, select the
-`victron_vebus_mk3.set_remote_panel_state` action, pick the device from the list of targets,
-then view the result in YAML mode.
-
-Here are some examples.
-
-Set the remote panel mode to `on` and the current limit to its maximum.
-
-```yaml
-action: victron_vebus_mk3.set_remote_panel_state
-data:
-  device_id: 54b361121006d7658fa486a9ebaf02bc
-  mode: "on"
-```
-
-Set the remote panel mode to `charger_only` and the current limit to 12.5 amps.
+The `victron_vebus_mk3.set_remote_panel_state` service sets remote panel mode and optionally sets the current limit at the same time.
 
 ```yaml
 action: victron_vebus_mk3.set_remote_panel_state
@@ -265,117 +202,16 @@ data:
   current_limit: 12.5
 ```
 
-Set the remote panel mode to `pass_through` to keep the inverter side enabled while
-preventing battery charging.
+## Documentation
 
-```yaml
-action: victron_vebus_mk3.set_remote_panel_state
-data:
-  device_id: 54b361121006d7658fa486a9ebaf02bc
-  mode: "pass_through"
-```
+- [Installation](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Installation)
+- [First Setup](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/First-Setup)
+- [Safe Control Guide](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Safe-Control-Guide)
+- [Entities Reference](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Entities-Reference)
+- [Energy Dashboard](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Energy-Dashboard)
+- [Services and Automations](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Services-and-Automations)
+- [Troubleshooting](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Troubleshooting)
 
-## Standby mode
+## License
 
-When the charger/inverter device is turned off and standby mode is not enabled, it may go to sleep and shut off its internal power supply to avoid draining the batteries. Because the MK3 interface is powered from the device's VE.Bus port, then the interface will lose power when the device is turned off and it will be unable to send a command to wake the device up again.
-
-The solution is to enable standby mode. When standby mode is enabled, the MK3 interface will prevent the device from going to sleep as long as it remains connected to the device's VE.Bus. Note that the device draws more energy from the batteries while in standby than it would while sleeping.
-
-We recommend always enabling standby mode to maintain control of the device at all times.
-
-## Troubleshooting
-
-### What to do if your charger/inverter turned itself off and won't turn on anymore (and the front panel switch doesn't work)
-
-Don't panic!
-
-Your device probably thinks it's supposed to be sleeping and it needs little nudge to wake up or forget that it's supposed to be sleeping. The device firmware determines the operating mode based on several factors, including the state of the front panel switch, remote panel state (set via the MK3 interface), and remote on/off connection. You might feel concerned that toggling the front panel switch doesn't fix the problem right away and it's probably going to be fine.
-
-Here are some possible recovery methods:
-
-- Check the front panel status indicators on the device. If some of indicators are lit, they may tell you what the problem is.
-- If you have connected a switch to the remote on/off switch input of your device, make sure it's in the ON position and that the wires are intact.
-- Plug the device into AC mains. The device should wake up within a few seconds and begin responding to the MK3 interface again. Use the MK3 interface to set the remote panel mode to ON.
-- Unplug the MK3 interface from the VE.Bus port or disconnect the ethernet jack from the interface. Toggle the front panel switch to OFF. Wait at least 30 seconds for the device to fully go to sleep. Toggle the front panel switch to ON and wait a few seconds for the device to turn on. If that didn't work, try toggling the front panel switch to CHARGE ONLY then OFF, wait at least 30 seconds again, then ON again. Plug the MK3 interface back in as before.
-- Ensure the device is connected to the batteries and receiving power.
-
-Once you have resolved the issue, consider enabling [standby mode](#standby-mode) to prevent the device from falling asleep unintentionally.
-
-### What to do if the MK3 interface has difficulties communicating with your charger/inverter device
-
-Here are some things to try if the MK3 interface appears to be having difficulties communicating with your charger/inverter device or is outputting incomplete data:
-
-- Check the logs for relevant messages.
-- Ensure that the MK3 interface is plugged into USB and the selected serial port is correct.
-- The MK3 interface receives power from VE.Bus and will not operate if the device is asleep. Ensure it is plugged into VE.Bus and awake as explained in [this topic](#what-to-do-if-your-chargerinverter-turned-itself-off-and-wont-turn-on-anymore-and-the-front-panel-switch-doesnt-work).
-- Unplug the MK3 interface from your computer's USB port, unplug the MK3 interface from the device's VE.Bus (or disconnect the ethernet jack from the interface), plug the MK3 back in as before, and try again.
-- If you have connected additional peripherals to your device's VE.Bus ports, try unplugging them to rule out possible conflicts with the MK3 interface.
-- If you just operated your MK3 interface using a different program such as the Victron Connect app, the interface may have been left in a state that this library doesn't know how to handle. Quit the other program, unplug the MK3 from VE.Bus to reset it, plug it back in, and try again.
-- Try using the MK3 interface with Victron Connect, just to make sure it works, and to apply firmware updates to the device.
-
-## Installation
-
-### HACS
-
-1. Open HACS.
-2. Add `https://github.com/usersaynoso/victron-vebus-mk3-control` as a custom repository with category `Integration`.
-3. Install **Victron VE.Bus MK3 Control**.
-4. Restart Home Assistant.
-5. Plug in the Victron MK3-USB interface.
-6. Add the integration from Settings -> Devices & services.
-
-### Manual
-
-1. Copy `custom_components/victron_vebus_mk3` into your Home Assistant `custom_components` directory.
-2. Restart Home Assistant.
-3. Plug in the Victron MK3-USB interface.
-4. Add the integration from Settings -> Devices & services.
-
-### Integration Setup
-
-The device should have been auto-discovered and available to set up with one click. If not, click the button
-in the UI to add **Victron VE.Bus MK3 Control**, then choose the detected serial device for the Victron MK3-USB interface.
-If Home Assistant offers manual entry, you can use the serial port path as a fallback.
-
-## Alternatives
-
-Victron provides several options for controlling VE.Bus based charger and inverter devices.
-Here's a quick overview of some of them.
-
-[Victron Interface MK3-USB](https://www.victronenergy.com/accessories/interface-mk3-usb):
-
-- Actively monitor and control your device with Home Assistant using this
-  [Victron VE.Bus MK3 Control](https://github.com/usersaynoso/victron-vebus-mk3-control) integration.
-- Can set the operating mode and current limit and keep the device in standby.
-- Configure your device over USB from a computer running [VictronConnect](https://www.victronenergy.com/victronconnectapp/victronconnect/downloads).
-
-[Victron VE.Bus Smart Dongle](https://www.victronenergy.com/communication-centres/ve-bus-smart-dongle):
-
-- Passively monitor your device with Home Assistant via Bluetooth Low Energy using
-  the [victron-ble-hacs](https://github.com/keshavdv/victron-hacs) integration or with an
-  [ESPHome device](https://esphome.io/) and the [esphome-victron_ble](https://github.com/Fabian-Schmidt/esphome-victron_ble) component.
-- Because the integrations are passive, they cannot set the operating mode or current limit.
-- Configure your device over Bluetooth from a computer or smartphone running
-  [VictronConnect](https://www.victronenergy.com/victronconnectapp/victronconnect/downloads).
-
-[Victron GX Controllers](https://www.victronenergy.com/communication-centres):
-
-- Actively monitor and control your device with Home Assistant over a network connection
-  using the [hass-victron](https://github.com/sfstar/hass-victron) integration.
-- Some GX devices have displays and programmable control panels.
-
-Built-in remote on/off control:
-
-- Simple: only requires wiring a switch to the remote on/off terminals.
-- On/off only: cannot switch between operating modes such as on and charger_only.
-
-For devices with multiple VE.Bus ports, you can combine certain products to achieve
-complementary goals such as using a Smart Dongle to configure devices with the
-VictronConnect app and using a USB Interface to remotely set the operating mode
-and current limit from Home Assistant.
-
-## Credits and License
-
-This project is MIT licensed and keeps the original copyright notice. This project started as a fork of Jeff Brown's `victron-mk3-hass` and has since been extended.
-
-Victron Energy, VE.Bus, MultiPlus, Quattro, and MK3-USB are Victron Energy names used here to describe compatible equipment. This project is independent and is not an official Victron Energy integration.
+This project is MIT licensed. Victron Energy, VE.Bus, MultiPlus, Quattro, and MK3-USB are Victron Energy names used here to describe compatible equipment. This project is independent and is not an official Victron Energy integration.

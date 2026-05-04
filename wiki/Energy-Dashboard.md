@@ -20,7 +20,7 @@ Use these entities in Settings -> Dashboards -> Energy:
 
 `AC Input Power` can be used as instantaneous grid-side power only when the VE.Bus device measures the same grid connection point you want to display.
 
-If some loads, solar, or generators bypass the VE.Bus device, use a separate site meter for grid energy. Otherwise the Energy dashboard may tell a beautifully formatted half-truth.
+If some loads, solar, or generators bypass the VE.Bus device, use a separate site meter for grid energy. Otherwise the Energy dashboard will only show the portion of the site measured by the VE.Bus device.
 
 ## What This Integration Does Not Provide Yet
 

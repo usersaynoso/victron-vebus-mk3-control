@@ -26,4 +26,4 @@ Setting `Battery Capacity` to `0` disables the battery monitor on devices that s
 
 ## Safety Notes
 
-Battery monitor settings affect reporting and charge behaviour assumptions. They are not just dashboard decoration. Use values that match your battery system rather than values that make the graph look cheerful.
+Battery monitor settings affect reporting and charge behaviour assumptions. Use values that match your battery system.

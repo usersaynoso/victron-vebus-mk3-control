@@ -39,5 +39,3 @@ data:
 - Avoid rapid mode switching.
 - Prefer conditions that check `Actual Mode`, battery voltage, and AC input state.
 - Add manual overrides for important power automations.
-
-Power automations are excellent servants and poor improv actors. Keep them simple.
