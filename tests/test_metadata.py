@@ -107,8 +107,20 @@ def test_wiki_pages_exist_for_user_documentation() -> None:
     assert {path.name for path in wiki.glob("*.md")} == expected
 
 
+def test_license_files_preserve_original_and_current_copyright_notices() -> None:
+    for license_path in (
+        ROOT / "LICENSE",
+        ROOT / "victron_vebus_mk3_protocol_package" / "LICENSE",
+    ):
+        license_text = license_path.read_text()
+
+        assert "Copyright (c) 2024 Jeff Brown" in license_text
+        assert "Copyright (c) 2026 Chris Taylor-Guest" in license_text
+
+
 def test_brand_assets_exist_for_hacs_validation() -> None:
     brand = COMPONENT / "brand"
 
     assert (brand / "icon.png").is_file()
-    assert (brand / "logo.png").is_file()
+    assert (brand / "dark_icon.png").is_file()
+    assert not (brand / "logo.png").exists()

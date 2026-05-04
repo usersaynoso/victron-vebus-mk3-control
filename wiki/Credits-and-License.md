@@ -2,7 +2,7 @@
 
 ## License
 
-This project is released under the MIT license.
+This project is released under the MIT license. The license file preserves required copyright notices for original and current work; those notices identify copyright in contributed portions and do not imply ownership of the entire current repository by any one contributor.
 
 ## Independence
 

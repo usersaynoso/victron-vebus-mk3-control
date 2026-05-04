@@ -54,4 +54,4 @@ This library talks to real power equipment. It does not know your battery chemis
 
 ## Credits and License
 
-This package is MIT licensed and keeps the original copyright notice. It is independent work and is not an official Victron Energy product.
+This package is MIT licensed. The package license preserves required copyright notices for original and current work; those notices identify copyright in contributed portions and do not imply ownership of the entire current repository by any one contributor. It is independent work and is not an official Victron Energy product.

@@ -214,4 +214,6 @@ data:
 
 ## License
 
-This project is MIT licensed. Victron Energy, VE.Bus, MultiPlus, Quattro, and MK3-USB are Victron Energy names used here to describe compatible equipment. This project is independent and is not an official Victron Energy integration.
+This project is MIT licensed. The license file preserves required copyright notices for original and current work; those notices identify copyright in contributed portions and do not imply ownership of the entire current repository by any one contributor.
+
+Victron Energy, VE.Bus, MultiPlus, Quattro, and MK3-USB are Victron Energy names used here to describe compatible equipment. This project is independent and is not an official Victron Energy integration.
