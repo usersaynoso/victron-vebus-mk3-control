@@ -72,6 +72,11 @@ def test_readme_uses_public_names_and_service_domain() -> None:
         "https://my.home-assistant.io/redirect/hacs_repository/"
         "?owner=usersaynoso&repository=victron-vebus-mk3-control&category=integration"
     ) in readme
+    assert "https://my.home-assistant.io/badges/hacs_repository.svg" in readme
+    assert (
+        "[![Open your Home Assistant instance and open this repository in HACS.]"
+        "(https://my.home-assistant.io/badges/hacs_repository.svg)]"
+    ) in readme
     assert old_owner not in readme
     assert old_service not in readme
 

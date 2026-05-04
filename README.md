@@ -19,7 +19,8 @@ Full setup, safety notes, troubleshooting, and entity explanations are in the [p
 ## Install
 
 Open the repository directly in HACS:
-[Install Victron VE.Bus MK3 Control](https://my.home-assistant.io/redirect/hacs_repository/?owner=usersaynoso&repository=victron-vebus-mk3-control&category=integration)
+
+[![Open your Home Assistant instance and open this repository in HACS.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=usersaynoso&repository=victron-vebus-mk3-control&category=integration)
 
 Or install it manually through HACS:
 
