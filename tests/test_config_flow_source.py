@@ -12,22 +12,12 @@ SOURCE = (
 ).read_text()
 
 
-def test_user_setup_port_uses_serial_port_selector() -> None:
-    tree = ast.parse(SOURCE)
-
-    assert any(
-        isinstance(node, ast.ImportFrom)
-        and node.module == "homeassistant.helpers.selector"
-        and any(alias.name == "SerialPortSelector" for alias in node.names)
-        for node in ast.walk(tree)
+def test_user_setup_port_uses_home_assistant_2026_serial_path_field() -> None:
+    assert (
+        "from homeassistant.helpers.service_info.usb import UsbServiceInfo" in SOURCE
     )
-    assert any(
-        isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "SerialPortSelector"
-        for node in ast.walk(tree)
-    )
-    assert "vol.Required(CONF_PORT, default=user_input[CONF_PORT]): str" not in SOURCE
+    assert "SerialPortSelector" not in SOURCE
+    assert "): str," in SOURCE
 
 
 def test_usb_probe_abort_uses_description_placeholder_mapping() -> None:
@@ -51,3 +41,16 @@ def test_usb_probe_abort_uses_description_placeholder_mapping() -> None:
         'description_placeholders={"error_detail", probe_result.name.lower()}'
         not in SOURCE
     )
+
+
+def test_config_flow_imports_bundled_protocol_module() -> None:
+    tree = ast.parse(SOURCE)
+
+    assert any(
+        isinstance(node, ast.ImportFrom)
+        and node.module == "protocol"
+        and node.level == 1
+        and any(alias.name == "probe" for alias in node.names)
+        for node in ast.walk(tree)
+    )
+    assert "from victron_vebus_mk3_protocol" not in SOURCE

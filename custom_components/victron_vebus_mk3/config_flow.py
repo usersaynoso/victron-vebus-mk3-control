@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from homeassistant.components import usb
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_MODEL, CONF_NAME, CONF_PORT
-from homeassistant.helpers.selector import SerialPortSelector
+from homeassistant.helpers.service_info.usb import UsbServiceInfo
 from typing import Any
-from victron_vebus_mk3_protocol import ProbeResult, probe
 import voluptuous as vol
 
 from .const import CONF_SERIAL_NUMBER, DOMAIN
+from .protocol import ProbeResult, probe
 
 DEFAULT_ENTRY_NAME = "Victron VE.Bus MK3 Control"
 
@@ -20,7 +19,7 @@ class MK3ConfigFlow(ConfigFlow, domain=DOMAIN):
     MINOR_VERSION = 1
 
     def __init__(self) -> None:
-        self._discovery_info: usb.UsbServiceInfo = None
+        self._discovery_info: UsbServiceInfo | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -48,7 +47,7 @@ class MK3ConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_NAME, default=user_input[CONF_NAME]): str,
                     vol.Required(
                         CONF_PORT, default=user_input.get(CONF_PORT) or vol.UNDEFINED
-                    ): SerialPortSelector(),
+                    ): str,
                 }
             ),
             errors=errors,
@@ -56,7 +55,7 @@ class MK3ConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_usb(
-        self, discovery_info: usb.UsbServiceInfo
+        self, discovery_info: UsbServiceInfo
     ) -> ConfigFlowResult:
         """Handle USB Discovery."""
         await self.async_set_unique_id(

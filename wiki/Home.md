@@ -6,12 +6,12 @@ This integration connects Home Assistant to supported Victron VE.Bus inverter/ch
 
 ## Start Here
 
-- [Installation](Installation.md)
-- [First Setup](First-Setup.md)
-- [Safe Control Guide](Safe-Control-Guide.md)
-- [Entities Reference](Entities-Reference.md)
-- [Energy Dashboard](Energy-Dashboard.md)
-- [Troubleshooting](Troubleshooting.md)
+- [Installation](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Installation)
+- [First Setup](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/First-Setup)
+- [Safe Control Guide](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Safe-Control-Guide)
+- [Entities Reference](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Entities-Reference)
+- [Energy Dashboard](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Energy-Dashboard)
+- [Troubleshooting](https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/Troubleshooting)
 
 ## What This Integration Is For
 

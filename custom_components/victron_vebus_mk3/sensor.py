@@ -24,7 +24,6 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from homeassistant.helpers.typing import StateType
 from homeassistant.util import dt as dt_util
 from typing import Callable
-from victron_vebus_mk3_protocol import DeviceState
 
 from . import Context, Data, UPDATE_INTERVAL
 from .battery_energy import BatteryEnergyAccumulator, BatteryEnergyDirection
@@ -33,6 +32,7 @@ from .const import (
     DOMAIN,
     KEY_CONTEXT,
 )
+from .protocol import DeviceState
 from .remote_panel import Mode, enum_options, enum_value
 from .ram_variables import (
     BATTERY_RIPPLE_VOLTAGE_VARIABLE_ID,

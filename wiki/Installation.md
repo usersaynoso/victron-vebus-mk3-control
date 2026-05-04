@@ -2,6 +2,11 @@
 
 ## HACS Installation
 
+Open the repository directly in HACS:
+[Install Victron VE.Bus MK3 Control](https://my.home-assistant.io/redirect/hacs_repository/?owner=usersaynoso&repository=victron-vebus-mk3-control&category=integration)
+
+Or install it manually through HACS:
+
 1. Open HACS in Home Assistant.
 2. Add this repository as a custom repository:
    `https://github.com/usersaynoso/victron-vebus-mk3-control`
@@ -25,7 +30,7 @@
 - On macOS it often looks like `/dev/tty.usbserial-...`.
 - On Windows it may look like `COM3`.
 
-If auto-discovery does not find it, choose the detected MK3-USB serial device in the setup form.
+If auto-discovery does not find it, enter or choose the detected MK3-USB serial device in the setup form.
 If Home Assistant offers manual entry, you can use the serial path as a fallback.
 
 ## After Installing

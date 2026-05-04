@@ -9,9 +9,7 @@
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/usersaynoso/victron-vebus-mk3-control/issues",
   "loggers": ["victron_vebus_mk3", "victron_vebus_mk3_protocol"],
-  "requirements": [
-    "victron-vebus-mk3-protocol==1.0.0"
-  ],
+  "requirements": ["pyserial==3.5", "pyserial-asyncio-fast==0.16"],
   "usb": [
     {
       "vid": "0403",

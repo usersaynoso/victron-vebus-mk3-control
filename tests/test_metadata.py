@@ -22,7 +22,10 @@ def test_manifest_uses_v1_name_domain_and_protocol_package() -> None:
     assert manifest["issue_tracker"] == (
         "https://github.com/usersaynoso/victron-vebus-mk3-control/issues"
     )
-    assert manifest["requirements"] == ["victron-vebus-mk3-protocol==1.0.0"]
+    assert manifest["requirements"] == [
+        "pyserial==3.5",
+        "pyserial-asyncio-fast==0.16",
+    ]
     assert "victron_vebus_mk3_protocol" in manifest["loggers"]
 
 
@@ -65,8 +68,23 @@ def test_readme_uses_public_names_and_service_domain() -> None:
     assert "# Victron VE.Bus MK3 Control" in readme
     assert "victron_vebus_mk3.set_remote_panel_state" in readme
     assert "usersaynoso/victron-vebus-mk3-control" in readme
+    assert (
+        "https://my.home-assistant.io/redirect/hacs_repository/"
+        "?owner=usersaynoso&repository=victron-vebus-mk3-control&category=integration"
+    ) in readme
     assert old_owner not in readme
     assert old_service not in readme
+
+
+def test_integration_bundles_protocol_module_instead_of_unpublished_package() -> None:
+    manifest = json.loads((COMPONENT / "manifest.json").read_text())
+    protocol = COMPONENT / "protocol.py"
+
+    assert protocol.is_file()
+    assert all(
+        "victron-vebus-mk3-protocol" not in requirement
+        for requirement in manifest["requirements"]
+    )
 
 
 def test_public_docs_introduce_integration_without_migration_language() -> None:
@@ -105,6 +123,26 @@ def test_wiki_pages_exist_for_user_documentation() -> None:
 
     wiki = ROOT / "wiki"
     assert {path.name for path in wiki.glob("*.md")} == expected
+
+
+def test_wiki_home_links_to_rendered_github_wiki_pages() -> None:
+    home = (ROOT / "wiki" / "Home.md").read_text()
+    expected_page_slugs = (
+        "Installation",
+        "First-Setup",
+        "Safe-Control-Guide",
+        "Entities-Reference",
+        "Energy-Dashboard",
+        "Troubleshooting",
+    )
+
+    assert "raw.githubusercontent.com/wiki" not in home
+    assert "](Installation.md)" not in home
+    for slug in expected_page_slugs:
+        assert (
+            "https://github.com/usersaynoso/victron-vebus-mk3-control/wiki/"
+            f"{slug}"
+        ) in home
 
 
 def test_license_files_preserve_original_and_current_copyright_notices() -> None:

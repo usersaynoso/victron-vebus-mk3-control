@@ -11,10 +11,10 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from typing import Callable
-from victron_vebus_mk3_protocol import InterfaceFlags, LEDState, SwitchRegister
 
 from . import Context, Data
 from .const import DOMAIN, KEY_CONTEXT
+from .protocol import InterfaceFlags, LEDState, SwitchRegister
 from .ram_variables import (
     MULTI_FUNCTIONAL_RELAY_STATE_VARIABLE_ID,
     VIRTUAL_SWITCH_POSITION_VARIABLE_ID,

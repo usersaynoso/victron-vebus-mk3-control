@@ -23,7 +23,7 @@ from homeassistant.helpers.update_coordinator import (
 )
 import logging
 from typing import List
-from victron_vebus_mk3_protocol import (
+from .protocol import (
     ACResponse,
     ConfigResponse,
     DCResponse,
