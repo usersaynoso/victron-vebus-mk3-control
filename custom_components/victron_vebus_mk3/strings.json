@@ -1,0 +1,232 @@
+{
+  "config": {
+    "abort": {
+      "already_configured": "Device is already configured"
+    },
+    "error": {
+      "already_configured": "Device is already configured",
+      "cannot_connect": "Failed to connect: {error_detail}"
+    },
+    "step": {
+      "discovery_confirm": {
+        "description": "Do you want to set up {model}?"
+      },
+      "user": {
+        "data": {
+          "name": "Name",
+          "port": "Serial port"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "mains_indicator": { "name": "Mains Indicator" },
+      "bulk_indicator": { "name": "Bulk Indicator" },
+      "absorption_indicator": { "name": "Absorption Indicator" },
+      "float_indicator": { "name": "Float Indicator" },
+      "inverter_indicator": { "name": "Inverter Indicator" },
+      "overload_indicator": { "name": "Overload Indicator" },
+      "low_battery_indicator": { "name": "Low Battery Indicator" },
+      "temperature_indicator": { "name": "Temperature Indicator" },
+      "remote_panel_detected": { "name": "Remote Panel Detected" },
+      "current_limit_controlled_by_panel": { "name": "Current Limit Controlled By Panel" },
+      "external_control_panel_dedicated": { "name": "External Control Panel Dedicated" },
+      "remote_generator_selected_state": { "name": "Remote Generator Selected State" },
+      "onboard_remote_inverter_switch": { "name": "Onboard Remote Inverter Switch" },
+      "interface_panel_detect": { "name": "Interface Panel Detect" },
+      "interface_standby": { "name": "Interface Standby" },
+      "virtual_switch_position": { "name": "Virtual Switch Position" },
+      "multi_functional_relay_state": { "name": "Multi-functional Relay State" }
+    },
+    "button": {
+      "force_equalise": { "name": "Force Equalise" },
+      "force_absorption": { "name": "Force Absorption" },
+      "force_float": { "name": "Force Float" }
+    },
+    "number": {
+      "remote_panel_current_limit": { "name": "Remote Panel Current Limit" },
+      "ac1_input_current_limit": { "name": "AC1 Input Current Limit" },
+      "ac2_input_current_limit": { "name": "AC2 Input Current Limit" },
+      "absorption_voltage": { "name": "Absorption Voltage" },
+      "float_voltage": { "name": "Float Voltage" },
+      "charge_current": { "name": "Charge Current" },
+      "inverter_output_voltage": { "name": "Inverter Output Voltage" },
+      "repeated_absorption_time": { "name": "Repeated Absorption Time" },
+      "repeated_absorption_interval": { "name": "Repeated Absorption Interval" },
+      "maximum_absorption_time": { "name": "Maximum Absorption Time" },
+      "battery_capacity": { "name": "Battery Capacity" },
+      "battery_soc_when_bulk_finished": { "name": "State of Charge When Bulk Finished" },
+      "battery_charge_efficiency": { "name": "Charge Efficiency" },
+      "dc_input_low_shutdown": { "name": "DC Input Low Shut-down" },
+      "dc_input_low_restart": { "name": "DC Input Low Restart" },
+      "dc_input_low_pre_alarm": { "name": "DC Input Low Pre-alarm" },
+      "assist_current_boost_factor": { "name": "Assist Current Boost Factor" },
+      "aes_low_current_limit": { "name": "AES Low Current Limit" },
+      "aes_current_hysteresis": { "name": "AES Current Hysteresis" }
+    },
+    "select": {
+      "remote_panel_mode": {
+        "name": "Remote Panel Mode",
+        "state": {
+          "off": "Off",
+          "on": "On",
+          "charger_only": "Charger only",
+          "inverter_only": "Inverter only",
+          "pass_through": "Pass through"
+        }
+      }
+    },
+    "sensor": {
+      "ac_input_voltage": { "name": "AC Input Voltage" },
+      "ac_input_current": { "name": "AC Input Current" },
+      "ac_output_voltage": { "name": "AC Output Voltage" },
+      "ac_output_current": { "name": "AC Output Current" },
+      "ac_input_voltage_l2": { "name": "AC Input Voltage L2" },
+      "ac_input_current_l2": { "name": "AC Input Current L2" },
+      "ac_output_voltage_l2": { "name": "AC Output Voltage L2" },
+      "ac_output_current_l2": { "name": "AC Output Current L2" },
+      "ac_input_voltage_l3": { "name": "AC Input Voltage L3" },
+      "ac_input_current_l3": { "name": "AC Input Current L3" },
+      "ac_output_voltage_l3": { "name": "AC Output Voltage L3" },
+      "ac_output_current_l3": { "name": "AC Output Current L3" },
+      "ac_input_voltage_l4": { "name": "AC Input Voltage L4" },
+      "ac_input_current_l4": { "name": "AC Input Current L4" },
+      "ac_output_voltage_l4": { "name": "AC Output Voltage L4" },
+      "ac_output_current_l4": { "name": "AC Output Current L4" },
+      "ac_input_current_limit": { "name": "AC Input Current Limit" },
+      "ac_input_current_limit_maximum": { "name": "AC Input Current Limit Maximum" },
+      "ac_input_current_limit_minimum": { "name": "AC Input Current Limit Minimum" },
+      "last_active_ac_input": {
+        "name": "Last Active AC Input",
+        "state": {
+          "ac_input_1": "AC input 1",
+          "ac_input_2": "AC input 2",
+          "ac_input_3": "AC input 3",
+          "ac_input_4": "AC input 4",
+          "unknown": "Unknown"
+        }
+      },
+      "number_of_ac_inputs": { "name": "Number Of AC Inputs" },
+      "reported_ac_number_of_phases": { "name": "Reported AC Number Of Phases" },
+      "interface_flags": { "name": "Interface Flags" },
+      "ac_input_power": { "name": "AC Input Power" },
+      "ac_input_frequency": { "name": "AC Input Frequency" },
+      "ac_output_power": { "name": "AC Output Power" },
+      "ac_output_frequency": { "name": "AC Output Frequency" },
+      "battery_voltage": { "name": "Battery Voltage" },
+      "battery_ripple_voltage": { "name": "Battery Ripple Voltage" },
+      "battery_power": { "name": "Battery Power" },
+      "battery_charge_discharge_power": { "name": "Battery Charge Discharge Power" },
+      "battery_state_of_charge": { "name": "Battery State of Charge" },
+      "battery_charger_current": { "name": "Battery Charger Current" },
+      "battery_inverter_current": { "name": "Battery Inverter Current" },
+      "signed_ac_load_current": { "name": "Signed AC Load Current" },
+      "device_state": {
+        "name": "Device State",
+        "state": {
+          "down": "Down",
+          "startup": "Starting",
+          "off": "Off",
+          "slave": "Linked unit",
+          "invert_full": "Inverting at full power",
+          "invert_half": "Inverting at reduced power",
+          "invert_aes": "Inverter energy saving",
+          "power_assist": "Helping AC input with battery power",
+          "bypass": "Passing AC through",
+          "state_charge": "Charging"
+        }
+      },
+      "vebus_charge_state": {
+        "name": "Detailed Charge State",
+        "state": {
+          "not_charging": "Not charging",
+          "initializing": "Starting charge check",
+          "bulk": "Fast charging",
+          "absorption": "Finishing charge",
+          "float": "Maintaining full battery",
+          "storage": "Long-term battery care",
+          "repeated_absorption": "Scheduled top-up charge",
+          "forced_absorption": "Forced finishing charge",
+          "equalise": "Battery balancing charge",
+          "bulk_stopped": "Fast charging stopped",
+          "unknown": "Unknown"
+        }
+      },
+      "firmware_version": { "name": "Firmware Version" },
+      "lit_indicators": {
+        "name": "Lit Indicators",
+        "state": {
+          "none": "None",
+          "mains": "Mains",
+          "bulk": "Bulk",
+          "absorption": "Absorption",
+          "float": "Float",
+          "inverter": "Inverter",
+          "overload": "Overload",
+          "low_battery": "Low battery",
+          "temperature": "Temperature"
+        }
+      },
+      "blinking_indicators": {
+        "name": "Blinking Indicators",
+        "state": {
+          "none": "None",
+          "mains": "Mains",
+          "bulk": "Bulk",
+          "absorption": "Absorption",
+          "float": "Float",
+          "inverter": "Inverter",
+          "overload": "Overload",
+          "low_battery": "Low battery",
+          "temperature": "Temperature"
+        }
+      },
+      "front_panel_mode": {
+        "name": "Front Panel Mode",
+        "state": {
+          "off": "Off",
+          "on": "On",
+          "charger_only": "Charger only"
+        }
+      },
+      "ignore_ac_input_state": {
+        "name": "Ignore AC Input State",
+        "state": {
+          "off": "Using AC input",
+          "on": "Ignoring AC input"
+        }
+      },
+      "actual_mode": {
+        "name": "Actual Mode",
+        "state": {
+          "off": "Off",
+          "on": "On",
+          "charger_only": "Charger only",
+          "inverter_only": "Inverter only",
+          "pass_through": "Pass through"
+        }
+      },
+      "battery_energy_into": { "name": "Battery Energy Into" },
+      "battery_energy_out_of": { "name": "Battery Energy Out Of" }
+    },
+    "switch": {
+      "remote_panel_standby": { "name": "Remote Panel Standby" },
+      "battery_monitor": { "name": "Battery Monitor" },
+      "charge_enabled": { "name": "Charge Enabled" },
+      "ups_function": { "name": "UPS Function" },
+      "power_assist": { "name": "PowerAssist" },
+      "dynamic_current_limiter": { "name": "Dynamic Current Limiter" },
+      "weak_ac_input": { "name": "Weak AC Input" },
+      "aes": { "name": "AES" },
+      "stop_after_excessive_bulk": { "name": "Stop After Excessive Bulk" },
+      "storage_mode": { "name": "Storage Mode" },
+      "ground_relay": { "name": "Ground Relay" },
+      "accept_wide_frequency_range": { "name": "Accept Wide Frequency Range" },
+      "remote_overrules_ac1": { "name": "Remote Overrules AC1" },
+      "remote_overrules_ac2": { "name": "Remote Overrules AC2" },
+      "tubular_plate_traction_battery_curve": { "name": "Tubular Plate Traction Battery Curve" },
+      "aes_low_power_shutdown": { "name": "AES Low Power Shutdown" }
+    }
+  }
+}

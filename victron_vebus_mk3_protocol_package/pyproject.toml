@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "victron-vebus-mk3-protocol"
+authors = [
+    { name = "Jeff Brown" },
+    { name = "usersaynoso" },
+]
+description = "Protocol library for local Victron VE.Bus MK3-USB monitoring and control."
+version = "1.0.0"
+dependencies = [
+    "pyserial",
+    "pyserial-asyncio-fast",
+]
+
+[project.optional-dependencies]
+cli = ["click"]
+
+[project.urls]
+Homepage = "https://github.com/usersaynoso/victron-vebus-mk3-protocol"
+Issues = "https://github.com/usersaynoso/victron-vebus-mk3-protocol/issues"

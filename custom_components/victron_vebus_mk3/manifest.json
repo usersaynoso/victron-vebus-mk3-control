@@ -1,0 +1,24 @@
+{
+  "domain": "victron_vebus_mk3",
+  "name": "Victron VE.Bus MK3 Control",
+  "codeowners": ["@usersaynoso"],
+  "config_flow": true,
+  "dependencies": ["usb"],
+  "documentation": "https://github.com/usersaynoso/victron-vebus-mk3-control/",
+  "integration_type": "device",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/usersaynoso/victron-vebus-mk3-control/issues",
+  "loggers": ["victron_vebus_mk3", "victron_vebus_mk3_protocol"],
+  "requirements": [
+    "victron-vebus-mk3-protocol==1.0.0"
+  ],
+  "usb": [
+    {
+      "vid": "0403",
+      "pid": "6015",
+      "manufacturer": "*victron*",
+      "description": "*mk3*"
+    }
+  ],
+  "version": "1.0.0"
+}
