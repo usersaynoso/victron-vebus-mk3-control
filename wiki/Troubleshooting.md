@@ -26,6 +26,12 @@ Unavailable can mean:
 - the MK3 interface missed a reply,
 - Home Assistant has not completed the next polling cycle.
 
+## Entities Are Disabled
+
+Some entities are disabled by default to reduce polling and database writes. This is expected for low-level diagnostic entities and for L2-L4 AC phase sensors on most single-phase systems.
+
+Enable extra entities only when you need them. If Home Assistant becomes slow or restarts on a low-memory system, increase the integration update interval before enabling more high-frequency sensors.
+
 ## Mode Does Not Change
 
 Check:

@@ -21,6 +21,7 @@ def test_switch_source_exposes_setting_flag_switches() -> None:
     assert 'name="Weak AC Input"' in source
     assert "DISABLE_WAVE_CHECK_FLAG_BIT" in source
     assert "DISABLE_WAVE_CHECK_INVERTED_FLAG_BIT" in source
+    assert "DISABLE_CHARGE_FLAG_BIT" in source
     assert "POWER_ASSIST_ENABLED_FLAG_BIT" in source
     assert "DYNAMIC_CURRENT_LIMITER_ENABLED_FLAG_BIT" in source
     assert "WEAK_AC_INPUT_ENABLED_FLAG_BIT" in source

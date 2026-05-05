@@ -52,6 +52,18 @@ def test_hacs_metadata_uses_public_display_name() -> None:
     }
 
 
+def test_options_translation_labels_are_present() -> None:
+    for translation_path in (
+        COMPONENT / "strings.json",
+        COMPONENT / "translations" / "en.json",
+    ):
+        payload = json.loads(translation_path.read_text())
+        option_step = payload["options"]["step"]["init"]
+
+        assert "polls the VE.Bus device" in option_step["description"]
+        assert option_step["data"]["update_interval"] == "Update interval (seconds)"
+
+
 def test_service_selector_uses_new_domain() -> None:
     services = (COMPONENT / "services.yaml").read_text()
     old_domain = "victron" + "_mk3"

@@ -71,8 +71,11 @@ from .const import (
     AC_PHASES_POLLED,
     CONF_CURRENT_LIMIT,
     CONF_SERIAL_NUMBER,
+    CONF_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
     KEY_CONTEXT,
+    MIN_UPDATE_INTERVAL,
 )
 from .capabilities import (
     DeviceCapabilities,
@@ -112,7 +115,7 @@ PLATFORMS: list[Platform] = [
     Platform.SENSOR,
     Platform.SWITCH,
 ]
-UPDATE_INTERVAL = timedelta(seconds=2)
+UPDATE_INTERVAL = timedelta(seconds=DEFAULT_UPDATE_INTERVAL)
 
 
 MODE_TO_SWITCH_STATE = {
@@ -524,11 +527,13 @@ class Context:
         coordinator: DataUpdateCoordinator[Data],
         device_id: str,
         device_info: DeviceInfo,
+        update_interval: timedelta,
     ) -> None:
         self.controller = controller
         self.coordinator = coordinator
         self.device_id = device_id
         self.device_info = device_info
+        self.update_interval = update_interval
 
     @property
     def capabilities(self) -> DeviceCapabilities:
@@ -561,12 +566,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up a config entry."""
     port = entry.data[CONF_PORT]
     controller = Controller(port)
+    update_interval = _update_interval_from_entry(entry)
 
     coordinator = DataUpdateCoordinator[Data](
         hass,
         logger,
         name=DOMAIN,
-        update_interval=UPDATE_INTERVAL,
+        update_interval=update_interval,
         update_method=controller.update,
     )
 
@@ -580,7 +586,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     )
 
     context = Context(
-        controller, coordinator, device.id, DeviceInfo(identifiers={(DOMAIN, port)})
+        controller,
+        coordinator,
+        device.id,
+        DeviceInfo(identifiers={(DOMAIN, port)}),
+        update_interval,
     )
 
     hass.data.setdefault(DOMAIN, {})
@@ -594,6 +604,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     await _async_setup_services(hass)
+    entry.async_on_unload(entry.add_update_listener(_async_reload_entry))
     return True
 
 
@@ -602,6 +613,19 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok
+
+
+def _update_interval_from_entry(entry: ConfigEntry) -> timedelta:
+    interval = entry.options.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
+    try:
+        seconds = int(interval)
+    except (TypeError, ValueError):
+        seconds = DEFAULT_UPDATE_INTERVAL
+    return timedelta(seconds=max(seconds, MIN_UPDATE_INTERVAL))
+
+
+async def _async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def _async_setup_services(hass: HomeAssistant) -> None:

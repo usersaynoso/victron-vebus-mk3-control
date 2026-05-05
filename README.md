@@ -39,6 +39,14 @@ Manual installation is also supported by copying `custom_components/victron_vebu
 
 This integration can change real inverter or inverter/charger behaviour. Check battery voltages, charge current, input limits, and advanced settings against your battery manual or installer settings before changing them. Hardware controls and external panels may override Home Assistant, so use `Actual Mode` as the source of truth when the requested mode and actual behaviour differ.
 
+## Polling And Entity Load
+
+The integration polls the MK3 interface every 2 seconds by default. You can change this in the integration options under Settings -> Devices & services -> Victron VE.Bus MK3 Control -> Configure. The minimum is 1 second.
+
+Shorter intervals make dashboards react faster, but they also create more Home Assistant state updates and recorder work. If Home Assistant runs on a low-memory device, increase the interval before enabling extra diagnostic or additional AC phase entities.
+
+Some entities are disabled by default on purpose. Low-level diagnostics and L2-L4 AC phase sensors are available for systems that need them, but keeping them off avoids unnecessary polling and database writes on typical single-phase systems.
+
 ## Remote Panel Modes
 
 | Mode | Request |

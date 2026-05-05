@@ -54,3 +54,13 @@ def test_config_flow_imports_bundled_protocol_module() -> None:
         for node in ast.walk(tree)
     )
     assert "from victron_vebus_mk3_protocol" not in SOURCE
+
+
+def test_options_flow_exposes_poll_interval_with_minimum_and_default() -> None:
+    assert "async_get_options_flow" in SOURCE
+    assert "class MK3OptionsFlow(OptionsFlow)" in SOURCE
+    assert "CONF_UPDATE_INTERVAL" in SOURCE
+    assert "DEFAULT_UPDATE_INTERVAL" in SOURCE
+    assert "MIN_UPDATE_INTERVAL" in SOURCE
+    assert "vol.Range(min=MIN_UPDATE_INTERVAL)" in SOURCE
+    assert "self._config_entry.options.get(" in SOURCE

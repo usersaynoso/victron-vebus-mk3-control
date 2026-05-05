@@ -19,6 +19,12 @@ After setup, check these first:
 
 If these are unavailable, the device may be asleep, the selected serial port may be wrong, or another program may still be using the MK3 interface.
 
+## Polling Interval
+
+The integration polls every 2 seconds by default. To change this, open Settings -> Devices & services -> Victron VE.Bus MK3 Control -> Configure and set the update interval in seconds. The minimum is 1 second.
+
+Use a slower interval if Home Assistant is running on a small device or if the recorder database is already busy. Use a faster interval only when you need very responsive dashboards or automations.
+
 ## Recommended Starting Settings
 
 - Leave `Remote Panel Standby` on if you want Home Assistant to keep control when the inverter or inverter/charger is off.

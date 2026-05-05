@@ -1,12 +1,24 @@
 from __future__ import annotations
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    ConfigFlowResult,
+    OptionsFlow,
+)
 from homeassistant.const import CONF_MODEL, CONF_NAME, CONF_PORT
+from homeassistant.core import callback
 from homeassistant.helpers.service_info.usb import UsbServiceInfo
 from typing import Any
 import voluptuous as vol
 
-from .const import CONF_SERIAL_NUMBER, DOMAIN
+from .const import (
+    CONF_SERIAL_NUMBER,
+    CONF_UPDATE_INTERVAL,
+    DEFAULT_UPDATE_INTERVAL,
+    DOMAIN,
+    MIN_UPDATE_INTERVAL,
+)
 from .protocol import ProbeResult, probe
 
 DEFAULT_ENTRY_NAME = "Victron VE.Bus MK3 Control"
@@ -20,6 +32,12 @@ class MK3ConfigFlow(ConfigFlow, domain=DOMAIN):
 
     def __init__(self) -> None:
         self._discovery_info: UsbServiceInfo | None = None
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> OptionsFlow:
+        """Create the options flow."""
+        return MK3OptionsFlow(config_entry)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -92,4 +110,32 @@ class MK3ConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(
             step_id="discovery_confirm",
             description_placeholders={"model": self._discovery_info.description},
+        )
+
+
+class MK3OptionsFlow(OptionsFlow):
+    """Handle options for the Victron VE.Bus MK3 integration."""
+
+    def __init__(self, config_entry: ConfigEntry) -> None:
+        self._config_entry = config_entry
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Manage integration options."""
+        if user_input is not None:
+            return self.async_create_entry(title="", data=user_input)
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_UPDATE_INTERVAL,
+                        default=self._config_entry.options.get(
+                            CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
+                        ),
+                    ): vol.All(vol.Coerce(int), vol.Range(min=MIN_UPDATE_INTERVAL)),
+                }
+            ),
         )

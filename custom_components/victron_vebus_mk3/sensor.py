@@ -25,7 +25,7 @@ from homeassistant.helpers.typing import StateType
 from homeassistant.util import dt as dt_util
 from typing import Callable
 
-from . import Context, Data, UPDATE_INTERVAL
+from . import Context, Data
 from .battery_energy import BatteryEnergyAccumulator, BatteryEnergyDirection
 from .capabilities import entity_supported
 from .const import (
@@ -471,7 +471,7 @@ class VictronMK3BatteryEnergySensorEntity(RestoreEntity, CoordinatorEntity, Sens
         self._attr_native_value = None
         self._accumulator = BatteryEnergyAccumulator(
             direction=entity_description.direction,
-            max_interval_seconds=UPDATE_INTERVAL.total_seconds() * 3,
+            max_interval_seconds=context.update_interval.total_seconds() * 3,
         )
 
     async def async_added_to_hass(self) -> None:

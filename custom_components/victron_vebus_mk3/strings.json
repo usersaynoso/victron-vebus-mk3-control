@@ -19,6 +19,16 @@
       }
     }
   },
+  "options": {
+    "step": {
+      "init": {
+        "description": "Choose how often Home Assistant polls the VE.Bus device. Shorter intervals update faster but increase load on Home Assistant and the MK3 interface.",
+        "data": {
+          "update_interval": "Update interval (seconds)"
+        }
+      }
+    }
+  },
   "entity": {
     "binary_sensor": {
       "mains_indicator": { "name": "Mains Indicator" },

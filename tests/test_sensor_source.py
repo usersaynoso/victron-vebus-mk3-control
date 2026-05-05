@@ -30,3 +30,15 @@ def test_sensor_source_exposes_signed_battery_power_entity() -> None:
     assert 'key="battery_charge_discharge_power"' in source
     assert 'name="Battery Charge Discharge Power"' in source
     assert "else -data.power.dc_power" in source
+
+
+def test_battery_energy_uses_configured_update_interval() -> None:
+    source = (
+        Path(__file__).resolve().parents[1]
+        / "custom_components"
+        / "victron_vebus_mk3"
+        / "sensor.py"
+    ).read_text()
+
+    assert "context.update_interval.total_seconds() * 3" in source
+    assert "from . import Context, Data, UPDATE_INTERVAL" not in source
