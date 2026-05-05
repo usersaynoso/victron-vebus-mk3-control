@@ -22,7 +22,7 @@ from homeassistant.helpers.update_coordinator import (
     UpdateFailed,
 )
 import logging
-from typing import List
+from typing import Awaitable, List, TypeVar
 from .protocol import (
     ACResponse,
     ConfigResponse,
@@ -77,6 +77,7 @@ from .const import (
     KEY_CONTEXT,
     MIN_UPDATE_INTERVAL,
 )
+from .diagnostics_events import DiagnosticsEventLog
 from .capabilities import (
     DeviceCapabilities,
     infer_device_capabilities,
@@ -106,6 +107,8 @@ from .vebus_state import (
     DeviceChargeState,
     read_device_charge_state,
 )
+
+T = TypeVar("T")
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -219,6 +222,7 @@ class Controller(Handler):
         self._last_battery_capacity: float | None = None
         self._version: VersionResponse | None = None
         self.capabilities = DeviceCapabilities()
+        self.diagnostics_events = DiagnosticsEventLog()
         self.standby: bool | None = None
         self.ac_entities = [[] for _ in range(0, AC_PHASES_POLLED)]
 
@@ -239,6 +243,7 @@ class Controller(Handler):
     def on_idle(self) -> None:
         logger.debug("Idle")
         self._idle = True
+        self.diagnostics_events.record("controller_idle", "Device is asleep")
 
     def on_fault(self, fault: Fault) -> None:
         if fault == Fault.EXCEPTION:
@@ -246,55 +251,68 @@ class Controller(Handler):
         else:
             logger.error(f"Communication fault: {fault}")
         self._fault = fault
+        self.diagnostics_events.record("controller_fault", fault)
 
     async def update(self) -> Data:
         if self._fault is not None:
-            raise UpdateFailed(f"Communication fault: {self._fault}")
+            err = UpdateFailed(f"Communication fault: {self._fault}")
+            self.diagnostics_events.record("coordinator_update", err)
+            raise err
         if self._idle:
-            raise UpdateFailed("Device is asleep")
+            err = UpdateFailed("Device is asleep")
+            self.diagnostics_events.record("coordinator_update", err)
+            raise err
 
-        register_battery_soc_variable(self._mk3)
-
-        if self.standby is not None:
-            flags = InterfaceFlags.PANEL_DETECT
-            if self.standby:
-                flags |= InterfaceFlags.STANDBY
-            data_interface = await self._mk3.send_interface_request(flags)
-        else:
-            data_interface = await self._mk3.send_interface_request()
-
-        data = Data()
-        data.interface = data_interface
-        data.version = self._version
-        data.led = await self._mk3.send_led_request()
-        data.dc = await self._mk3.send_dc_request()
-        for phase in range(1, AC_PHASES_POLLED + 1):
-            # It might be nice to optimize the polling based on AC_Response.ac_num_phases
-            # but it seems to report an incorrect number of phases on some devices so instead
-            # we only poll phases that are associated with enabled entities.
-            index = phase - 1
-            data.ac[index] = (
-                await self._mk3.send_ac_request(phase)
-                if any(x.enabled for x in self.ac_entities[index])
-                else None
-            )
-        data.power = await self._mk3.send_power_request()
-        await self._update_settings(data)
-        await self._update_ram_variables(data)
         try:
-            data.device_charge_state = await read_device_charge_state(self._mk3)
-            data.device_charge_state_supported = data.device_charge_state is not None
-        except Exception:
-            logger.debug("Failed to read detailed charge state", exc_info=True)
-        try:
-            if data.battery_monitor_enabled:
-                data.battery_soc = await read_battery_soc(self._mk3)
-        except Exception:
-            logger.debug("Failed to read battery state of charge", exc_info=True)
-        data.config = await self._mk3.send_config_request()
-        data.capabilities = infer_device_capabilities(data)
-        self.capabilities = data.capabilities
-        return data
+            register_battery_soc_variable(self._mk3)
+
+            if self.standby is not None:
+                flags = InterfaceFlags.PANEL_DETECT
+                if self.standby:
+                    flags |= InterfaceFlags.STANDBY
+                data_interface = await self._mk3.send_interface_request(flags)
+            else:
+                data_interface = await self._mk3.send_interface_request()
+
+            data = Data()
+            data.interface = data_interface
+            data.version = self._version
+            data.led = await self._mk3.send_led_request()
+            data.dc = await self._mk3.send_dc_request()
+            for phase in range(1, AC_PHASES_POLLED + 1):
+                # It might be nice to optimize the polling based on AC_Response.ac_num_phases
+                # but it seems to report an incorrect number of phases on some devices so instead
+                # we only poll phases that are associated with enabled entities.
+                index = phase - 1
+                data.ac[index] = (
+                    await self._mk3.send_ac_request(phase)
+                    if any(x.enabled for x in self.ac_entities[index])
+                    else None
+                )
+            data.power = await self._mk3.send_power_request()
+            await self._update_settings(data)
+            await self._update_ram_variables(data)
+            try:
+                data.device_charge_state = await read_device_charge_state(self._mk3)
+                data.device_charge_state_supported = (
+                    data.device_charge_state is not None
+                )
+            except Exception as err:
+                self.diagnostics_events.record("read_device_charge_state", err)
+                logger.debug("Failed to read detailed charge state", exc_info=True)
+            try:
+                if data.battery_monitor_enabled:
+                    data.battery_soc = await read_battery_soc(self._mk3)
+            except Exception as err:
+                self.diagnostics_events.record("read_battery_soc", err)
+                logger.debug("Failed to read battery state of charge", exc_info=True)
+            data.config = await self._mk3.send_config_request()
+            data.capabilities = infer_device_capabilities(data)
+            self.capabilities = data.capabilities
+            return data
+        except Exception as err:
+            self.diagnostics_events.record("coordinator_update", err)
+            raise
 
     async def set_remote_panel_state(
         self, mode: Mode, current_limit: float | None
@@ -542,6 +560,19 @@ class Context:
             return data.capabilities
         return self.controller.capabilities
 
+    @property
+    def diagnostics_events(self) -> DiagnosticsEventLog:
+        return self.controller.diagnostics_events
+
+    async def run_control_action(
+        self, operation: str, action: Awaitable[T]
+    ) -> T:
+        try:
+            return await action
+        except Exception as err:
+            self.diagnostics_events.record(operation, err)
+            raise
+
 
 async def _prune_unsupported_entity_registry_entries(
     hass: HomeAssistant,
@@ -654,8 +685,17 @@ async def set_remote_panel_state(
         entry_data = hass.data[DOMAIN].get(entry_id, None)
         if entry_data is not None:
             context = entry_data[KEY_CONTEXT]
-            await context.controller.set_remote_panel_state(mode, current_limit)
-            await context.coordinator.async_request_refresh()
+            await context.run_control_action(
+                f"service.{SERVICE_NAME}",
+                _set_remote_panel_state_for_context(context, mode, current_limit),
+            )
             return
 
     raise HomeAssistantError(f"Device ID {device_id} cannot handle this request")
+
+
+async def _set_remote_panel_state_for_context(
+    context: Context, mode: Mode, current_limit: float | None
+) -> None:
+    await context.controller.set_remote_panel_state(mode, current_limit)
+    await context.coordinator.async_request_refresh()

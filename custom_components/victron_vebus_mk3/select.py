@@ -83,7 +83,10 @@ class VictronMK3SelectEntity(CoordinatorEntity, SelectEntity):
         self.async_write_ha_state()
 
     async def async_select_option(self, option: str) -> None:
-        await self.entity_description.select_fn(self.context, option)
+        await self.context.run_control_action(
+            f"select.{self.entity_description.key}.select",
+            self.entity_description.select_fn(self.context, option),
+        )
 
 
 async def async_setup_entry(

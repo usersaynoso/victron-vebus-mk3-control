@@ -32,6 +32,20 @@ Some entities are disabled by default to reduce polling and database writes. Thi
 
 Enable extra entities only when you need them. If Home Assistant becomes slow or restarts on a low-memory system, increase the integration update interval before enabling more high-frequency sensors.
 
+## Download Diagnostics For A GitHub Issue
+
+When opening a GitHub issue, attach a diagnostics file from Home Assistant. It includes redacted integration details, the latest VE.Bus data, current entity states, and recent integration errors.
+
+1. In Home Assistant, go to Settings -> Devices & services.
+2. Select **Victron VE.Bus MK3 Control**.
+3. Open the three-dot menu next to the configured integration entry.
+4. Select **Download diagnostics**.
+5. Save the downloaded file.
+6. Open a GitHub issue using the required problem report form.
+7. Attach the diagnostics file in the diagnostics upload field. If GitHub will not accept the file, zip it first and attach the `.zip`.
+
+The diagnostics file redacts the configured serial number and serial device path, but you should still review any file before sharing it publicly.
+
 ## Mode Does Not Change
 
 Check:

@@ -1,0 +1,91 @@
+name: Victron VE.Bus MK3 problem report
+description: Report a problem with the Victron VE.Bus MK3 Control integration.
+title: "[Problem]: "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before submitting, download diagnostics from Home Assistant:
+
+        Settings -> Devices & services -> Victron VE.Bus MK3 Control -> three-dot menu -> Download diagnostics.
+
+        Attach the downloaded file below. It contains redacted integration, entity, and VE.Bus state that helps diagnose the issue.
+  - type: checkboxes
+    id: existing-issues
+    attributes:
+      label: Existing issues
+      options:
+        - label: I have searched existing issues for a similar report.
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe the problem and what you expected to happen.
+      placeholder: The integration shows..., but I expected...
+    validations:
+      required: true
+  - type: dropdown
+    id: affected-area
+    attributes:
+      label: Affected area
+      multiple: true
+      options:
+        - Setup or connection
+        - Sensors or binary sensors
+        - Switches, selects, numbers, or buttons
+        - Remote panel mode
+        - Battery monitor or energy dashboard
+        - Device capability detection
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: input
+    id: home-assistant-version
+    attributes:
+      label: Home Assistant version
+      placeholder: "Example: 2026.5.0"
+    validations:
+      required: true
+  - type: input
+    id: integration-version
+    attributes:
+      label: Victron VE.Bus MK3 Control version
+      description: Find this in HACS, or in custom_components/victron_vebus_mk3/manifest.json if installed manually.
+      placeholder: "Example: 1.1.1"
+    validations:
+      required: true
+  - type: upload
+    id: diagnostics
+    attributes:
+      label: Diagnostics file
+      description: Attach the file from Download diagnostics. Zip it first if GitHub will not accept the original file.
+    validations:
+      required: true
+      accept: ".json,.txt,.log,.zip"
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Home Assistant logs
+      description: Paste any relevant log lines from Settings -> System -> Logs.
+      render: shell
+    validations:
+      required: false
+  - type: textarea
+    id: extra-context
+    attributes:
+      label: Anything else?
+      description: Add screenshots, wiring notes, device model details, or timing details that are not already in diagnostics.
+    validations:
+      required: false

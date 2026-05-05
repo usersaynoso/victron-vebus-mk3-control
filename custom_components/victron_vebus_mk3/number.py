@@ -448,7 +448,10 @@ class VictronMK3NumberEntity(CoordinatorEntity, NumberEntity):
         self.async_write_ha_state()
 
     async def async_set_native_value(self, value: float) -> None:
-        await self.entity_description.set_fn(self.context, value)
+        await self.context.run_control_action(
+            f"number.{self.entity_description.key}.set",
+            self.entity_description.set_fn(self.context, value),
+        )
 
 
 async def async_setup_entry(

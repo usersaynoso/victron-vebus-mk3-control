@@ -69,21 +69,24 @@ class VictronMK3StandbySwitchEntity(RestoreEntity, SwitchEntity):
         await super().async_added_to_hass()
         state = await self.async_get_last_state()
         self._attr_is_on = state.state == STATE_ON if state is not None else True
-        await self._notify_controller()
+        await self._notify_controller("switch.remote_panel_standby.restore")
 
     async def async_turn_on(self) -> None:
         self._attr_is_on = True
         self.async_write_ha_state()
-        await self._notify_controller()
+        await self._notify_controller("switch.remote_panel_standby.turn_on")
 
     async def async_turn_off(self) -> None:
         self._attr_is_on = False
         self.async_write_ha_state()
-        await self._notify_controller()
+        await self._notify_controller("switch.remote_panel_standby.turn_off")
 
-    async def _notify_controller(self) -> None:
+    async def _notify_controller(self, operation: str) -> None:
         self.context.controller.standby = self._attr_is_on
-        await self.context.coordinator.async_request_refresh()
+        await self.context.run_control_action(
+            operation,
+            self.context.coordinator.async_request_refresh(),
+        )
 
 
 class VictronMK3BatteryMonitorSwitchEntity(CoordinatorEntity, SwitchEntity):
@@ -124,12 +127,21 @@ class VictronMK3BatteryMonitorSwitchEntity(CoordinatorEntity, SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_on(self) -> None:
-        await self.context.controller.set_battery_monitor_enabled(True)
-        await self.context.coordinator.async_request_refresh()
+        await self.context.run_control_action(
+            "switch.battery_monitor.turn_on",
+            _set_battery_monitor_enabled(self.context, True),
+        )
 
     async def async_turn_off(self) -> None:
-        await self.context.controller.set_battery_monitor_enabled(False)
-        await self.context.coordinator.async_request_refresh()
+        await self.context.run_control_action(
+            "switch.battery_monitor.turn_off",
+            _set_battery_monitor_enabled(self.context, False),
+        )
+
+
+async def _set_battery_monitor_enabled(context: Context, enabled: bool) -> None:
+    await context.controller.set_battery_monitor_enabled(enabled)
+    await context.coordinator.async_request_refresh()
 
 
 async def set_charge_enabled(context: Context, enabled: bool) -> None:
@@ -233,10 +245,16 @@ class VictronMK3ChargeEnabledSwitchEntity(CoordinatorEntity, SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_on(self) -> None:
-        await set_charge_enabled(self.context, True)
+        await self.context.run_control_action(
+            "switch.charge_enabled.turn_on",
+            set_charge_enabled(self.context, True),
+        )
 
     async def async_turn_off(self) -> None:
-        await set_charge_enabled(self.context, False)
+        await self.context.run_control_action(
+            "switch.charge_enabled.turn_off",
+            set_charge_enabled(self.context, False),
+        )
 
 
 class VictronMK3UpsFunctionSwitchEntity(CoordinatorEntity, SwitchEntity):
@@ -279,10 +297,16 @@ class VictronMK3UpsFunctionSwitchEntity(CoordinatorEntity, SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_on(self) -> None:
-        await set_ups_function_enabled(self.context, True)
+        await self.context.run_control_action(
+            "switch.ups_function.turn_on",
+            set_ups_function_enabled(self.context, True),
+        )
 
     async def async_turn_off(self) -> None:
-        await set_ups_function_enabled(self.context, False)
+        await self.context.run_control_action(
+            "switch.ups_function.turn_off",
+            set_ups_function_enabled(self.context, False),
+        )
 
 
 SETTING_FLAG_ENTITY_DESCRIPTIONS: tuple[VictronMK3SettingFlagSwitchEntityDescription, ...] = (
@@ -518,10 +542,16 @@ class VictronMK3SettingFlagSwitchEntity(CoordinatorEntity, SwitchEntity):
         self.async_write_ha_state()
 
     async def async_turn_on(self) -> None:
-        await self.entity_description.set_fn(self.context, True)
+        await self.context.run_control_action(
+            f"switch.{self.entity_description.key}.turn_on",
+            self.entity_description.set_fn(self.context, True),
+        )
 
     async def async_turn_off(self) -> None:
-        await self.entity_description.set_fn(self.context, False)
+        await self.context.run_control_action(
+            f"switch.{self.entity_description.key}.turn_off",
+            self.entity_description.set_fn(self.context, False),
+        )
 
 
 def _ups_function_entity_supported(context: Context) -> bool:

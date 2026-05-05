@@ -73,7 +73,10 @@ class VictronMK3ButtonEntity(CoordinatorEntity, ButtonEntity):
         self._attr_unique_id = f"{context.device_id}-{entity_description.key}"
 
     async def async_press(self) -> None:
-        await self.entity_description.press_fn(self.context)
+        await self.context.run_control_action(
+            f"button.{self.entity_description.key}.press",
+            self.entity_description.press_fn(self.context),
+        )
 
 
 async def async_setup_entry(
