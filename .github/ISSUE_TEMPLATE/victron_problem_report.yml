@@ -8,9 +8,9 @@ body:
       value: |
         Before submitting, download diagnostics from Home Assistant:
 
-        Settings -> Devices & services -> Victron VE.Bus MK3 Control -> three-dot menu -> Download diagnostics.
+        Settings -> Devices & services -> Victron VE.Bus MK3 Control -> click the ... next to Victron VE.Bus MK3 Control -> Download diagnostics.
 
-        Attach the downloaded file below. It contains redacted integration, entity, and VE.Bus state that helps diagnose the issue.
+        Attach the downloaded file below. It contains redacted Home Assistant runtime details, integration settings, controller state, entity state, recent errors, and VE.Bus data that helps diagnose the issue.
   - type: checkboxes
     id: existing-issues
     attributes:
@@ -63,14 +63,14 @@ body:
     attributes:
       label: Victron VE.Bus MK3 Control version
       description: Find this in HACS, or in custom_components/victron_vebus_mk3/manifest.json if installed manually.
-      placeholder: "Example: 1.1.1"
+      placeholder: "Example: 1.1.2"
     validations:
       required: true
   - type: upload
     id: diagnostics
     attributes:
       label: Diagnostics file
-      description: Attach the file from Download diagnostics. Zip it first if GitHub will not accept the original file.
+      description: Attach the file from Download diagnostics. In Home Assistant, go to Settings -> Devices & services -> Victron VE.Bus MK3 Control, click the ... next to Victron VE.Bus MK3 Control, then select Download diagnostics. Zip it first if GitHub will not accept the original file.
     validations:
       required: true
       accept: ".json,.txt,.log,.zip"

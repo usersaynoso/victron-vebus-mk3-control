@@ -60,6 +60,19 @@ def test_read_ram_variable_info_parses_bit_variable_metadata() -> None:
     assert ram_variables.ram_variable_bool_supported(info)
 
 
+def test_read_ram_variable_info_treats_undefined_scale_as_unsupported() -> None:
+    driver = FakeDriver([bytes.fromhex("ff588e00808f0000")])
+
+    info = asyncio.run(
+        ram_variables.read_ram_variable_info(
+            FakeMK3(driver), ram_variables.SIGNED_AC_LOAD_CURRENT_VARIABLE_ID
+        )
+    )
+
+    assert info is not None
+    assert not info.supported
+
+
 def test_read_ram_variable_reads_bit_backed_boolean_value() -> None:
     driver = FakeDriver([bytes.fromhex("ff59850200")])
     info = ram_variables.RamVariableInfo(

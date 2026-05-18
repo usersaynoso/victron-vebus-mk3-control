@@ -49,7 +49,7 @@ Some entities are disabled by default on purpose. Low-level diagnostics and L2-L
 
 ## Reporting Issues
 
-If you need help with a problem, download diagnostics before opening a GitHub issue: Settings -> Devices & services -> Victron VE.Bus MK3 Control -> three-dot menu -> Download diagnostics. Attach that file to the required GitHub issue form so the report includes redacted VE.Bus data, entity states, and recent integration errors.
+If you need help with a problem, download diagnostics before opening a GitHub issue: Settings -> Devices & services -> Victron VE.Bus MK3 Control -> click the ... next to Victron VE.Bus MK3 Control -> Download diagnostics. Attach that file to the required GitHub issue form so the report includes redacted Home Assistant runtime details, integration settings, controller state, VE.Bus data, entity states, and recent integration errors.
 
 ## Remote Panel Modes
 

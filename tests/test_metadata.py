@@ -15,7 +15,7 @@ def test_manifest_uses_v1_name_domain_and_protocol_package() -> None:
     assert manifest["domain"] == "victron_vebus_mk3"
     assert manifest["name"] == "Victron VE.Bus MK3 Control"
     assert manifest["codeowners"] == ["@usersaynoso"]
-    assert manifest["version"] == "1.1.1"
+    assert manifest["version"] == "1.1.2"
     assert manifest["documentation"] == (
         "https://github.com/usersaynoso/victron-vebus-mk3-control/"
     )

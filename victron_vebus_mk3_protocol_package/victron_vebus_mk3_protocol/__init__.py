@@ -17,6 +17,20 @@ AC_PHASES_SUPPORTED = 4
 logger: logging.Logger = logging.getLogger("victron_vebus_mk3_protocol")
 
 
+def _ram_variable_info_from_scale(raw_scale: int) -> tuple[bool, float] | None:
+    signed = False
+    scale = raw_scale
+    if scale >= 0x8000:
+        scale = 0x10000 - scale
+        signed = True
+    if scale >= 0x4000:
+        denominator = 0x8000 - scale
+        if denominator == 0:
+            return None
+        scale = 1 / denominator
+    return signed, scale
+
+
 class SwitchState(IntEnum):
     CHARGER_ONLY = 1
     INVERTER_ONLY = 2
@@ -680,13 +694,15 @@ class _VictronMK3Driver:
     def _handle_variable_info_response(self, handler: Handler, msg: bytes) -> None:
         self._variable_info_request_time = None
         if len(msg) >= 8 and msg[2] == 0x8E and msg[5] == 0x8F:
-            scale = msg[3] | msg[4] << 8
-            signed = False
-            if scale >= 0x8000:
-                scale = 0x10000 - scale
-                signed = True
-            if scale >= 0x4000:
-                scale = 1 / (0x8000 - scale)
+            raw_scale = msg[3] | msg[4] << 8
+            scale_info = _ram_variable_info_from_scale(raw_scale)
+            if scale_info is None:
+                logger.debug(
+                    "Ignoring RAM variable info response with undefined scale %#x",
+                    raw_scale,
+                )
+                return
+            signed, scale = scale_info
             offset = msg[6] | msg[7] << 8
             if offset >= 0x8000:
                 offset -= 0x10000

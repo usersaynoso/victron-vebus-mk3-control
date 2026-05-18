@@ -34,11 +34,11 @@ Enable extra entities only when you need them. If Home Assistant becomes slow or
 
 ## Download Diagnostics For A GitHub Issue
 
-When opening a GitHub issue, attach a diagnostics file from Home Assistant. It includes redacted integration details, the latest VE.Bus data, current entity states, and recent integration errors.
+When opening a GitHub issue, attach a diagnostics file from Home Assistant. It includes redacted Home Assistant runtime details, integration settings, controller state, the latest VE.Bus data, current entity states, and recent integration errors.
 
 1. In Home Assistant, go to Settings -> Devices & services.
 2. Select **Victron VE.Bus MK3 Control**.
-3. Open the three-dot menu next to the configured integration entry.
+3. Click the **...** menu next to **Victron VE.Bus MK3 Control**.
 4. Select **Download diagnostics**.
 5. Save the downloaded file.
 6. Open a GitHub issue using the required problem report form.

@@ -88,6 +88,20 @@ def test_driver_parses_config_response_frame() -> None:
     assert response.switch_register == switch_register
 
 
+def test_driver_ignores_undefined_ram_variable_scale_without_crashing() -> None:
+    driver = _VictronMK3Driver()
+    original_queue = list(driver._variable_id_queue)
+    driver._variable_info_request_time = 1
+
+    driver._handle_variable_info_response(
+        CollectingHandler(), bytes.fromhex("ff588e00808f0000")
+    )
+
+    assert driver._variable_info_request_time is None
+    assert driver._variable_id_queue == original_queue
+    assert driver._variable_info == {}
+
+
 def test_send_state_request_writes_current_limit_frame_and_waits_for_ack() -> None:
     async def exercise() -> StateResponse | None:
         driver = _VictronMK3Driver()

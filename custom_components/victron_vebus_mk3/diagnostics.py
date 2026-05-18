@@ -18,9 +18,16 @@ if TYPE_CHECKING:
 
 TO_REDACT = {
     CONF_SERIAL_NUMBER,
+    "config_dir",
+    "config_path",
     "serial",
     "serial_number",
     "device",
+    "external_url",
+    "internal_url",
+    "latitude",
+    "location_name",
+    "longitude",
     "port",
 }
 
@@ -31,7 +38,9 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     from homeassistant.components.diagnostics import async_redact_data
 
-    payload = _json_safe(_diagnostics_payload(hass, entry))
+    payload = _diagnostics_payload(hass, entry)
+    payload["environment"] = await _environment_diagnostics(hass)
+    payload = _json_safe(payload)
     return async_redact_data(payload, TO_REDACT)
 
 
@@ -42,7 +51,8 @@ def _diagnostics_payload(hass: Any, entry: Any) -> dict[str, Any]:
         "integration": _manifest_diagnostics(),
         "config_entry": _config_entry_diagnostics(entry),
         "coordinator": _coordinator_diagnostics(context),
-        "device": _device_diagnostics(context),
+        "controller": _controller_diagnostics(context),
+        "mk3_device": _device_diagnostics(context),
         "victron_data": _victron_data_diagnostics(context),
         "entities": _entity_diagnostics(hass, entry),
         "recent_events": []
@@ -89,6 +99,15 @@ def _config_entry_diagnostics(entry: Any) -> dict[str, Any]:
     }
 
 
+async def _environment_diagnostics(hass: Any) -> dict[str, Any]:
+    try:
+        from homeassistant.helpers import system_info
+
+        return await system_info.async_get_system_info(hass)
+    except Exception as err:
+        return {"error": _exception_diagnostics(err)}
+
+
 def _coordinator_diagnostics(context: Any | None) -> dict[str, Any] | None:
     if context is None:
         return None
@@ -99,7 +118,36 @@ def _coordinator_diagnostics(context: Any | None) -> dict[str, Any] | None:
         "data_available": getattr(coordinator, "data", None) is not None,
         "last_update_success": getattr(coordinator, "last_update_success", None),
         "last_exception": _exception_diagnostics(last_exception),
+        "last_update_success_time": getattr(
+            coordinator, "last_update_success_time", None
+        ),
+        "last_update_failure_time": getattr(
+            coordinator, "last_update_failure_time", None
+        ),
         "update_interval_seconds": context.update_interval.total_seconds(),
+    }
+
+
+def _controller_diagnostics(context: Any | None) -> dict[str, Any] | None:
+    if context is None:
+        return None
+
+    controller = context.controller
+    ac_entities = getattr(controller, "ac_entities", [])
+    return {
+        "fault": _json_safe(getattr(controller, "_fault", None)),
+        "idle": getattr(controller, "_idle", None),
+        "standby": getattr(controller, "standby", None),
+        "capabilities": _json_safe(getattr(controller, "capabilities", None)),
+        "last_battery_capacity": getattr(controller, "_last_battery_capacity", None),
+        "cached_ram_variable_info": _json_safe(
+            getattr(controller, "_ram_variable_info", {})
+        ),
+        "cached_setting_info": _json_safe(getattr(controller, "_setting_info", {})),
+        "ac_phase_enabled_entity_counts": [
+            sum(1 for entity in phase if getattr(entity, "enabled", False))
+            for phase in ac_entities
+        ],
     }
 
 
@@ -176,8 +224,14 @@ def _entity_entry_diagnostics(hass: Any, entity_entry: Any) -> dict[str, Any]:
         "name": getattr(entity_entry, "name", None),
         "original_name": getattr(entity_entry, "original_name", None),
         "translation_key": getattr(entity_entry, "translation_key", None),
+        "icon": getattr(entity_entry, "icon", None),
+        "original_icon": getattr(entity_entry, "original_icon", None),
+        "device_class": getattr(entity_entry, "device_class", None),
+        "original_device_class": getattr(entity_entry, "original_device_class", None),
         "entity_category": getattr(entity_entry, "entity_category", None),
         "disabled_by": getattr(entity_entry, "disabled_by", None),
+        "hidden_by": getattr(entity_entry, "hidden_by", None),
+        "has_entity_name": getattr(entity_entry, "has_entity_name", None),
         "state": _state_diagnostics(state),
     }
 

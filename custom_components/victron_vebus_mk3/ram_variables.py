@@ -160,9 +160,9 @@ def _parse_ram_variable_info_frame(
         )
 
     sc = _signed_16bit(frame[3:5])
-    scale = abs(sc)
-    if scale >= 0x4000:
-        scale = 1 / (0x8000 - scale)
+    scale = _ram_variable_scale(sc)
+    if scale is None:
+        return RamVariableInfo(variable_id=variable_id, supported=False)
 
     return RamVariableInfo(
         variable_id=variable_id,
@@ -208,6 +208,16 @@ def _ram_variable_value_from_raw(
     if info.signed and value >= 0x8000:
         value -= 0x10000
     return info.scale * (value + info.offset)
+
+
+def _ram_variable_scale(sc: int) -> float | None:
+    scale = abs(sc)
+    if scale >= 0x4000:
+        denominator = 0x8000 - scale
+        if denominator == 0:
+            return None
+        scale = 1 / denominator
+    return scale
 
 
 def _signed_16bit(raw: bytes) -> int:
