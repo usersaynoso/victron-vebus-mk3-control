@@ -681,7 +681,7 @@ async def set_remote_panel_state(
     if device is None:
         raise DeviceNotFound(f"Device ID {device_id} is not valid")
 
-    for entry_id in device.config_entries:
+    for entry_id in _device_config_entry_ids(device):
         entry_data = hass.data[DOMAIN].get(entry_id, None)
         if entry_data is not None:
             context = entry_data[KEY_CONTEXT]
@@ -692,6 +692,14 @@ async def set_remote_panel_state(
             return
 
     raise HomeAssistantError(f"Device ID {device_id} cannot handle this request")
+
+
+def _device_config_entry_ids(device: device_registry.DeviceEntry) -> List[str]:
+    # HA 2026.8+ has config_entry_id; config_entries logs a deprecation warning
+    # from 2026.10 and is removed for custom integrations in 2027.10.
+    if hasattr(device, "config_entry_id"):
+        return [device.config_entry_id] if device.config_entry_id else []
+    return list(device.config_entries)
 
 
 async def _set_remote_panel_state_for_context(

@@ -280,7 +280,9 @@ ENTITY_DESCRIPTIONS: tuple[VictronMK3SensorEntityDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         native_unit_of_measurement=UnitOfPower.WATT,
         suggested_display_precision=1,
-        value_fn=lambda data: None if data.power is None else -data.power.dc_power,
+        value_fn=lambda data: None
+        if data.power is None or data.power.dc_power is None
+        else -data.power.dc_power,
     ),
     VictronMK3SensorEntityDescription(
         key="battery_state_of_charge",

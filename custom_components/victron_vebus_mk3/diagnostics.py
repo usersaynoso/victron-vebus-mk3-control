@@ -38,17 +38,21 @@ async def async_get_config_entry_diagnostics(
     """Return diagnostics for a config entry."""
     from homeassistant.components.diagnostics import async_redact_data
 
-    payload = _diagnostics_payload(hass, entry)
+    # Reading manifest.json is file I/O, so keep it off the event loop.
+    manifest = await hass.async_add_executor_job(_manifest_diagnostics)
+    payload = _diagnostics_payload(hass, entry, manifest)
     payload["environment"] = await _environment_diagnostics(hass)
     payload = _json_safe(payload)
     return async_redact_data(payload, TO_REDACT)
 
 
-def _diagnostics_payload(hass: Any, entry: Any) -> dict[str, Any]:
+def _diagnostics_payload(
+    hass: Any, entry: Any, manifest: dict[str, Any]
+) -> dict[str, Any]:
     context = _context_for_entry(hass, entry)
 
     return {
-        "integration": _manifest_diagnostics(),
+        "integration": manifest,
         "config_entry": _config_entry_diagnostics(entry),
         "coordinator": _coordinator_diagnostics(context),
         "controller": _controller_diagnostics(context),
@@ -164,6 +168,9 @@ def _device_diagnostics(context: Any | None) -> dict[str, Any] | None:
 
 
 def _device_info_diagnostics(device_info: Any) -> Any:
+    # DeviceInfo is a dataclass from HA 2026.11; as_dict() leaves out unset fields.
+    if hasattr(device_info, "as_dict"):
+        device_info = device_info.as_dict()
     info = _json_safe(device_info)
     if not isinstance(info, dict):
         return info

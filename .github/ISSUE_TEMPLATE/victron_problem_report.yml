@@ -63,7 +63,7 @@ body:
     attributes:
       label: Victron VE.Bus MK3 Control version
       description: Find this in HACS, or in custom_components/victron_vebus_mk3/manifest.json if installed manually.
-      placeholder: "Example: 1.1.2"
+      placeholder: "Example: 1.1.3"
     validations:
       required: true
   - type: upload

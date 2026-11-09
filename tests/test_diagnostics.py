@@ -91,6 +91,20 @@ def test_device_info_diagnostics_redacts_identifier_values() -> None:
     assert payload["connections"] == [["usb", "**REDACTED**"]]
 
 
+def test_device_info_diagnostics_uses_dataclass_as_dict() -> None:
+    diagnostics = _load_component_submodule("diagnostics")
+
+    class DataclassDeviceInfo:
+        unset_field = object()
+
+        def as_dict(self) -> dict:
+            return {"identifiers": {("victron_vebus_mk3", "/dev/ttyUSB0")}}
+
+    payload = diagnostics._device_info_diagnostics(DataclassDeviceInfo())
+
+    assert payload == {"identifiers": [["victron_vebus_mk3", "**REDACTED**"]]}
+
+
 def test_environment_diagnostics_reports_home_assistant_system_info(monkeypatch) -> None:
     diagnostics = _load_component_submodule("diagnostics")
     homeassistant = types.ModuleType("homeassistant")
@@ -224,3 +238,10 @@ def test_docs_explain_download_diagnostics() -> None:
     assert "Download Diagnostics For A GitHub Issue" in troubleshooting
     assert "Click the **...** menu" in troubleshooting
     assert "Attach the diagnostics file" in troubleshooting
+
+
+def test_config_entry_diagnostics_reads_manifest_in_executor() -> None:
+    source = (COMPONENT / "diagnostics.py").read_text()
+
+    assert "hass.async_add_executor_job(_manifest_diagnostics)" in source
+    assert '"integration": _manifest_diagnostics()' not in source

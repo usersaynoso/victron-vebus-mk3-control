@@ -88,8 +88,9 @@ def test_driver_parses_config_response_frame() -> None:
     assert response.switch_register == switch_register
 
 
-def test_driver_ignores_undefined_ram_variable_scale_without_crashing() -> None:
+def test_driver_treats_undefined_ram_variable_scale_as_unsupported() -> None:
     driver = _VictronMK3Driver()
+    driver._writer = FakeWriter()
     original_queue = list(driver._variable_id_queue)
     driver._variable_info_request_time = 1
 
@@ -97,9 +98,63 @@ def test_driver_ignores_undefined_ram_variable_scale_without_crashing() -> None:
         CollectingHandler(), bytes.fromhex("ff588e00808f0000")
     )
 
-    assert driver._variable_info_request_time is None
-    assert driver._variable_id_queue == original_queue
-    assert driver._variable_info == {}
+    assert driver._variable_id_queue == original_queue[1:]
+    assert driver._variable_info == {original_queue[0]: None}
+
+
+def test_driver_skips_unsupported_variable_short_reply() -> None:
+    # Inverter-only units reply to variable 0 (AC mains voltage) with just a zero
+    # scale and no offset part; discovery must move on to the next variable.
+    driver = _VictronMK3Driver()
+    writer = FakeWriter()
+    driver._writer = writer
+    driver._variable_info_request_time = 1
+
+    driver._handle_variable_info_response(
+        CollectingHandler(), bytes.fromhex("ff598e0000")
+    )
+
+    assert driver._variable_info == {0: None}
+    assert driver._variable_id_queue[0] == 1
+    assert writer.frames[-1][3:6] == bytes([0x36, 1, 0])
+
+
+def test_driver_reports_unsupported_variables_as_none() -> None:
+    driver = _VictronMK3Driver()
+    driver._writer = FakeWriter()
+    handler = CollectingHandler()
+    while driver._variable_id_queue:
+        variable_id = driver._variable_id_queue[0]
+        driver._variable_info_request_time = None
+        if variable_id in (0, 1, 8, 15):
+            reply = "ff598e0000"
+        else:
+            reply = "ff598e01008f0000"  # scale 1, offset 0
+        driver._handle_variable_info_response(handler, bytes.fromhex(reply))
+
+    assert driver._ensure_variable_info_available()
+
+    dc_frame = bytes([0x20, 0, 0, 0, 0, 0x0C, 0x18, 0x00, 5, 0, 0, 2, 0, 0, 200])
+    driver._handle_frame(handler, dc_frame)
+    ac_frame = bytes([0x20, 1, 1, 0, 9, 0x08, 0, 0, 0, 0, 230, 0, 7, 0, 0])
+    driver._handle_frame(handler, ac_frame)
+    driver._handle_power_response(
+        handler, bytes([0xFF, 0x58, 0x85, 50, 0, 0, 0, 40, 0])
+    )
+
+    dc, ac, power = handler.responses
+    assert dc.dc_voltage == 24
+    assert dc.dc_current_to_inverter == 5
+    assert dc.dc_current_from_charger == 2
+    assert dc.ac_inverter_frequency == 0.05
+    assert ac.ac_mains_voltage is None
+    assert ac.ac_mains_current is None
+    assert ac.ac_mains_frequency is None
+    assert ac.ac_inverter_voltage == 230
+    assert ac.ac_inverter_current == 7
+    assert power.dc_power == 50
+    assert power.ac_mains_power is None
+    assert power.ac_inverter_power == 40
 
 
 def test_send_state_request_writes_current_limit_frame_and_waits_for_ack() -> None:

@@ -31,6 +31,14 @@ def _ram_variable_info_from_scale(raw_scale: int) -> tuple[bool, float] | None:
     return signed, scale
 
 
+def _negate(value: float | None) -> float | None:
+    return None if value is None else -value
+
+
+def _multiply(value: float | None, factor: int) -> float | None:
+    return None if value is None else value * factor
+
+
 class SwitchState(IntEnum):
     CHARGER_ONLY = 1
     INVERTER_ONLY = 2
@@ -529,9 +537,9 @@ class _VictronMK3Driver:
                 self._deliver_response(
                     handler,
                     PowerResponse(
-                        dc_power=self._variable_info[14].parse(msg[3:5]),
-                        ac_mains_power=-self._variable_info[15].parse(msg[5:7]),
-                        ac_inverter_power=self._variable_info[16].parse(msg[7:9]),
+                        dc_power=self._parse_variable(14, msg[3:5]),
+                        ac_mains_power=_negate(self._parse_variable(15, msg[5:7])),
+                        ac_inverter_power=self._parse_variable(16, msg[7:9]),
                     ),
                 )
 
@@ -583,15 +591,13 @@ class _VictronMK3Driver:
                     self._deliver_response(
                         handler,
                         DCResponse(
-                            dc_voltage=self._variable_info[4].parse(msg[6:8]),
-                            dc_current_to_inverter=self._variable_info[5].parse(
-                                msg[8:11]
-                            ),
-                            dc_current_from_charger=self._variable_info[5].parse(
-                                msg[11:14]
+                            dc_voltage=self._parse_variable(4, msg[6:8]),
+                            dc_current_to_inverter=self._parse_variable(5, msg[8:11]),
+                            dc_current_from_charger=self._parse_variable(
+                                5, msg[11:14]
                             ),
                             ac_inverter_frequency=_VictronMK3Driver._period_to_frequency(
-                                self._variable_info[7].parse(msg[14:15])
+                                self._parse_variable(7, msg[14:15])
                             ),
                         ),
                     )
@@ -602,16 +608,16 @@ class _VictronMK3Driver:
                             ac_phase=max(9 - msg[5], 1),
                             ac_num_phases=max(msg[5] - 7, 0),
                             device_state=DeviceState(msg[4]),
-                            ac_mains_voltage=self._variable_info[0].parse(msg[6:8]),
-                            ac_mains_current=self._variable_info[1].parse(msg[8:10])
-                            * msg[1],
-                            ac_inverter_voltage=self._variable_info[2].parse(
-                                msg[10:12]
+                            ac_mains_voltage=self._parse_variable(0, msg[6:8]),
+                            ac_mains_current=_multiply(
+                                self._parse_variable(1, msg[8:10]), msg[1]
                             ),
-                            ac_inverter_current=self._variable_info[3].parse(msg[12:14])
-                            * msg[2],
+                            ac_inverter_voltage=self._parse_variable(2, msg[10:12]),
+                            ac_inverter_current=_multiply(
+                                self._parse_variable(3, msg[12:14]), msg[2]
+                            ),
                             ac_mains_frequency=_VictronMK3Driver._period_to_frequency(
-                                self._variable_info[8].parse(msg[14:15])
+                                self._parse_variable(8, msg[14:15])
                             ),
                         ),
                     )
@@ -663,6 +669,11 @@ class _VictronMK3Driver:
                 break
         handler.on_response(response)
 
+    def _parse_variable(self, id: int, raw: bytes) -> float | None:
+        # Variables the device reported as unsupported are stored as None.
+        info = self._variable_info.get(id)
+        return None if info is None else info.parse(raw)
+
     def _ensure_variable_info_available(self) -> bool:
         if len(self._variable_id_queue) == 0:
             return True
@@ -693,15 +704,23 @@ class _VictronMK3Driver:
 
     def _handle_variable_info_response(self, handler: Handler, msg: bytes) -> None:
         self._variable_info_request_time = None
-        if len(msg) >= 8 and msg[2] == 0x8E and msg[5] == 0x8F:
-            raw_scale = msg[3] | msg[4] << 8
-            scale_info = _ram_variable_info_from_scale(raw_scale)
-            if scale_info is None:
-                logger.debug(
-                    "Ignoring RAM variable info response with undefined scale %#x",
-                    raw_scale,
-                )
-                return
+        if len(msg) < 5 or msg[2] != 0x8E or len(self._variable_id_queue) == 0:
+            return
+        raw_scale = msg[3] | msg[4] << 8
+        scale_info = None if raw_scale == 0 else _ram_variable_info_from_scale(raw_scale)
+        if scale_info is None:
+            # The device replies with a zero (or undefined) scale and no offset part
+            # for variables it doesn't support, e.g. AC mains on an inverter-only unit.
+            id = self._variable_id_queue.pop(0)
+            logger.debug(
+                "RAM variable %d is not supported by this device (scale %#x)",
+                id,
+                raw_scale,
+            )
+            self._variable_info[id] = None
+            self._populate_next_variable_info()
+            return
+        if len(msg) >= 8 and msg[5] == 0x8F:
             signed, scale = scale_info
             offset = msg[6] | msg[7] << 8
             if offset >= 0x8000:
@@ -732,7 +751,9 @@ class _VictronMK3Driver:
         self._w_completion = None
         completion(handler, msg)
 
-    def _period_to_frequency(period: float) -> float:
+    def _period_to_frequency(period: float | None) -> float | None:
+        if period is None:
+            return None
         return round(0 if period == 0 else 10 / period, 2)
 
 

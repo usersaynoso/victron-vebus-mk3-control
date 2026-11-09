@@ -30,7 +30,8 @@ async def read_battery_soc(mk3: Any) -> float | None:
         return None
 
     variable_info = getattr(driver, "_variable_info", None)
-    if variable_info is None or BATTERY_SOC_VARIABLE_ID not in variable_info:
+    # A None entry means the device reported the variable as unsupported.
+    if variable_info is None or variable_info.get(BATTERY_SOC_VARIABLE_ID) is None:
         return None
 
     value = await _read_ram_variable(
