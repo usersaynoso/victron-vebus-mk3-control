@@ -173,3 +173,126 @@ def test_send_state_request_writes_current_limit_frame_and_waits_for_ack() -> No
         return await task
 
     assert isinstance(asyncio.run(exercise()), StateResponse)
+
+
+def _discover_variables(driver: _VictronMK3Driver, unsupported: tuple[int, ...]) -> None:
+    handler = CollectingHandler()
+    while driver._variable_id_queue:
+        variable_id = driver._variable_id_queue[0]
+        driver._variable_info_request_time = None
+        reply = "ff598e0000" if variable_id in unsupported else "ff598e01008f0000"
+        driver._handle_variable_info_response(handler, bytes.fromhex(reply))
+
+
+class ReplyingWriter(FakeWriter):
+    """Answers W-requests (X/Y/Z frames) via the driver using a reply function."""
+
+    def __init__(self, driver: _VictronMK3Driver, handler: Handler, reply) -> None:
+        super().__init__()
+        self._driver = driver
+        self._handler = handler
+        self._reply = reply
+
+    def write(self, msg: bytes) -> None:
+        super().write(msg)
+        if chr(msg[2]) in "XYZ":
+            payload = self._reply(list(msg[3:-1]))
+            if payload is not None:
+                nonce = "XYZ".index(chr(msg[2]))
+                asyncio.get_running_loop().call_soon(
+                    self._driver._handle_w_response,
+                    self._handler,
+                    nonce,
+                    bytes([0xFF, msg[2]] + payload),
+                )
+
+
+def _w_requests(writer: FakeWriter) -> list[list[int]]:
+    return [list(frame[3:-1]) for frame in writer.frames if chr(frame[2]) in "XYZ"]
+
+
+def test_power_request_uses_bundled_read_when_supported() -> None:
+    async def exercise():
+        driver = _VictronMK3Driver()
+        handler = CollectingHandler()
+        driver._writer = FakeWriter()
+        _discover_variables(driver, unsupported=())
+        writer = ReplyingWriter(
+            driver, handler, lambda req: [0x85, 50, 0, 10, 0, 40, 0]
+        )
+        driver._writer = writer
+        return await driver.send_power_request(), writer, handler
+
+    power, writer, handler = asyncio.run(exercise())
+    assert _w_requests(writer) == [[0x30, 14, 15, 16]]
+    assert (power.dc_power, power.ac_mains_power, power.ac_inverter_power) == (
+        50,
+        -10,
+        40,
+    )
+    assert handler.responses == [power]
+
+
+def test_power_request_falls_back_to_single_reads_after_rejection() -> None:
+    # Inverter Compact firmware 1170216 rejects the bundled read with 0x90.
+    def reply(req: list[int]) -> list[int]:
+        if len(req) > 2:
+            return [0x90, 0x02, 0x00]
+        return {14: [0x85, 50, 0], 15: [0x90, 0, 0], 16: [0x85, 40, 0]}[req[1]]
+
+    async def exercise():
+        driver = _VictronMK3Driver()
+        handler = CollectingHandler()
+        driver._writer = FakeWriter()
+        _discover_variables(driver, unsupported=())
+        writer = ReplyingWriter(driver, handler, reply)
+        driver._writer = writer
+        first = await driver.send_power_request()
+        second = await driver.send_power_request()
+        return first, second, writer
+
+    first, second, writer = asyncio.run(exercise())
+    assert _w_requests(writer) == [
+        [0x30, 14, 15, 16],
+        [0x30, 14],
+        [0x30, 15],
+        [0x30, 16],
+        [0x30, 14],
+        [0x30, 15],
+        [0x30, 16],
+    ]
+    for power in (first, second):
+        assert power.dc_power == 50
+        assert power.ac_mains_power is None
+        assert power.ac_inverter_power == 40
+
+
+def test_power_request_skips_variables_discovery_marked_unsupported() -> None:
+    async def exercise():
+        driver = _VictronMK3Driver()
+        handler = CollectingHandler()
+        driver._writer = FakeWriter()
+        _discover_variables(driver, unsupported=(0, 1, 15))
+        writer = ReplyingWriter(driver, handler, lambda req: [0x85, req[1], 0])
+        driver._writer = writer
+        return await driver.send_power_request(), writer
+
+    power, writer = asyncio.run(exercise())
+    assert _w_requests(writer) == [[0x30, 14], [0x30, 16]]
+    assert power.dc_power == 14
+    assert power.ac_mains_power is None
+    assert power.ac_inverter_power == 16
+
+
+def test_power_request_skipped_when_no_power_variables_supported() -> None:
+    async def exercise():
+        driver = _VictronMK3Driver()
+        driver._writer = FakeWriter()
+        _discover_variables(driver, unsupported=(14, 15, 16))
+        writer = FakeWriter()
+        driver._writer = writer
+        return await driver.send_power_request(), writer
+
+    power, writer = asyncio.run(exercise())
+    assert power is None
+    assert writer.frames == []

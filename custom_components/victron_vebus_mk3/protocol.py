@@ -31,6 +31,10 @@ def _ram_variable_info_from_scale(raw_scale: int) -> tuple[bool, float] | None:
     return signed, scale
 
 
+# RAM variables for DC power, AC mains power and AC inverter power.
+_POWER_VARIABLE_IDS = (14, 15, 16)
+
+
 def _negate(value: float | None) -> float | None:
     return None if value is None else -value
 
@@ -385,6 +389,9 @@ class _VictronMK3Driver:
         self._variable_info = {}
         self._variable_info_request_time = None
         self._response_waiters = []
+        # Some units (e.g. older Inverter Compact firmware) reject the bundled
+        # power read with "not supported", so fall back to one id per request.
+        self._power_read_bundled = True
 
     async def run(self, path: str, handler: Handler, ready: asyncio.Event) -> None:
         fault = Fault.EXCEPTION
@@ -524,24 +531,61 @@ class _VictronMK3Driver:
             _VictronMK3Driver.REQUEST_TIMEOUT_SECONDS,
         )
 
-    async def send_power_request(self) -> PowerResponse:
-        self._send_w_request([0x30, 14, 15, 16], self._handle_power_response)
-        return await self._wait_for_response(
-            PowerResponse,
-            _VictronMK3Driver.REQUEST_TIMEOUT_SECONDS,
-        )
+    async def send_power_request(self) -> PowerResponse | None:
+        if not self._ensure_variable_info_available():
+            return None
+        supported_ids = [
+            id for id in _POWER_VARIABLE_IDS if self._variable_info.get(id) is not None
+        ]
+        if not supported_ids:
+            return None
 
-    def _handle_power_response(self, handler: Handler, msg: bytes) -> None:
+        if self._power_read_bundled and len(supported_ids) == len(_POWER_VARIABLE_IDS):
+            reply = await self._send_w_request_and_wait([0x30, *_POWER_VARIABLE_IDS])
+            if reply is None:
+                return None
+            handler, msg = reply
+            if len(msg) < 3 or msg[2] != 0x90:
+                return self._handle_power_response(handler, msg)
+            logger.debug(
+                "Bundled power read is not supported by this device, "
+                "reading RAM variables %s one at a time",
+                _POWER_VARIABLE_IDS,
+            )
+            self._power_read_bundled = False
+
+        handler = None
+        values = {}
+        for id in supported_ids:
+            reply = await self._send_w_request_and_wait([0x30, id])
+            if reply is None:
+                continue
+            handler, msg = reply
+            if len(msg) >= 5 and msg[2] == 0x85:
+                values[id] = self._parse_variable(id, msg[3:5])
+        if handler is None:
+            return None
+        response = PowerResponse(
+            dc_power=values.get(14),
+            ac_mains_power=_negate(values.get(15)),
+            ac_inverter_power=values.get(16),
+        )
+        self._deliver_response(handler, response)
+        return response
+
+    def _handle_power_response(
+        self, handler: Handler, msg: bytes
+    ) -> PowerResponse | None:
         if self._ensure_variable_info_available():
             if len(msg) >= 9 and msg[2] == 0x85:
-                self._deliver_response(
-                    handler,
-                    PowerResponse(
-                        dc_power=self._parse_variable(14, msg[3:5]),
-                        ac_mains_power=_negate(self._parse_variable(15, msg[5:7])),
-                        ac_inverter_power=self._parse_variable(16, msg[7:9]),
-                    ),
+                response = PowerResponse(
+                    dc_power=self._parse_variable(14, msg[3:5]),
+                    ac_mains_power=_negate(self._parse_variable(15, msg[5:7])),
+                    ac_inverter_power=self._parse_variable(16, msg[7:9]),
                 )
+                self._deliver_response(handler, response)
+                return response
+        return None
 
     def _send_frame(self, command: int, data: List[int]) -> None:
         msg = bytearray(len(data) + 4)
@@ -732,6 +776,22 @@ class _VictronMK3Driver:
                 signed, scale, offset
             )
             self._populate_next_variable_info()
+
+    async def _send_w_request_and_wait(
+        self, msg: List[int]
+    ) -> tuple[Handler, bytes] | None:
+        future = asyncio.get_running_loop().create_future()
+
+        def completion(handler: Handler, reply: bytes) -> None:
+            if not future.done():
+                future.set_result((handler, reply))
+
+        self._send_w_request(msg, completion)
+        try:
+            async with asyncio.timeout(_VictronMK3Driver.REQUEST_TIMEOUT_SECONDS):
+                return await future
+        except TimeoutError:
+            return None
 
     def _send_w_request(
         self, msg: bytes, completion: Callable[[Handler, bytes], None]
